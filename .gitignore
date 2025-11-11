@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+*.egg-info/
+
+# Dados - NUNCA ENVIE DADOS PARA O GIT
+data/
+
+# Segredos - NUNCA ENVIE CHAVES PARA O GIT
+credentials/
+*.json
+*.csv
+
+# IDEs
+.vscode/
+.idea/
