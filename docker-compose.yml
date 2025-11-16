@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      # Mapeia a porta 56677 do seu PC para a porta 56677 do container
+      - "56677:56677"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./credentials:/app/credentials
+      - ./models:/app/models
+    command: tail -f /dev/null

@@ -1,0 +1,16 @@
+# Para a API do Google Drive (Não estamos usando, mas pode deixar)
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+
+# Para manipulação de dados
+pandas
+
+# Para a Fase 2 (Visão Computacional)
+opencv-python-headless
+mediapipe
+numpy
+
+# Para Machine Learning (Fase 3)
+tensorflow
+scikit-learn
