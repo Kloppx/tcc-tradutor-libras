@@ -1,80 +1,59 @@
-import numpy as np
 import os
-from sklearn.model_selection import train_test_split
+import numpy as np
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-# --- CONFIGURAÇÕES ---
-DATA_PATH = os.path.join('data', 'features')
-ACTIONS = np.array([pasta for pasta in os.listdir(DATA_PATH) if os.path.isdir(os.path.join(DATA_PATH, pasta))])
+# --- CORREÇÃO DO CAMINHO ---
+# Agora apontando para onde seus arquivos estão de verdade
+DATA_PATH = os.path.join('data', 'features') 
 
-def carregar_e_processar_dados():
+ACTIONS = np.array(['agua', 'dor', 'febre', 'hospital', 'rapido', 'saude'])
+MAX_LENGTH = 30 # Mantendo o corte curto para o vídeo ficar ágil
+
+def process_data():
     sequences, labels = [], []
     
-    # 1. Cria um dicionário para converter PALAVRA -> NÚMERO
-    # Ex: {'agua': 0, 'obrigado': 1, 'saude': 2}
-    label_map = {label:num for num, label in enumerate(ACTIONS)}
+    print(f"Lendo dados de: {os.path.abspath(DATA_PATH)}")
     
-    print(f"Classes encontradas: {label_map}")
-
-    # 2. Carrega os dados
-    max_length = 0 # Vamos descobrir qual é o vídeo mais longo
-    
-    for action in ACTIONS:
-        folder_path = os.path.join(DATA_PATH, action)
-        file_names = os.listdir(folder_path)
+    for action_idx, action in enumerate(ACTIONS):
+        action_path = os.path.join(DATA_PATH, action)
         
-        for file_name in file_names:
-            if file_name.endswith('.npy'):
-                res = np.load(os.path.join(folder_path, file_name))
-                sequences.append(res)
-                labels.append(label_map[action])
-                
-                # Guarda o tamanho do maior vídeo
-                if len(res) > max_length:
-                    max_length = len(res)
+        # Verificação de segurança
+        if not os.path.exists(action_path):
+            print(f"AVISO: Pasta não encontrada: {action_path}")
+            continue
+            
+        files = [f for f in os.listdir(action_path) if f.endswith('.npy')]
+        print(f" - Processando '{action}': {len(files)} arquivos.")
+        
+        for file_name in files:
+            # Carrega o arquivo
+            res = np.load(os.path.join(action_path, file_name))
+            
+            # --- CORTE AGRESSIVO (O segredo da agilidade) ---
+            # Pega só os primeiros 30 frames (1 segundo)
+            if len(res) > MAX_LENGTH:
+                res = res[:MAX_LENGTH]
+            
+            sequences.append(res)
+            labels.append(action_idx)
 
-    print(f"Total de vídeos: {len(sequences)}")
-    print(f"Vídeo mais longo tem: {max_length} frames")
-
-    # 3. PADRONIZAÇÃO (Zero Padding)
-    # Todos os vídeos devem ter o mesmo tamanho (max_length)
-    # Quem for menor, preenchemos com zeros no final
-    X = np.zeros((len(sequences), max_length, 1662)) # 1662 é o total de keypoints do MediaPipe Holistic
-    
-    for i, seq in enumerate(sequences):
-        length = len(seq)
-        X[i, :length, :] = seq # Copia os dados originais
-        # O restante já é zero automaticamente pela inicialização do array
-
-    # 4. Converte labels para categorias binárias (One Hot Encoding)
-    # Ex: 0 vira [1,0,0], 1 vira [0,1,0]
+    # Padding (preenche com zeros se tiver menos de 30)
+    X = pad_sequences(sequences, maxlen=MAX_LENGTH, padding='post', dtype='float32')
     y = to_categorical(labels).astype(int)
 
-    return X, y, max_length, label_map
+    # Salva na pasta processed
+    save_path = os.path.join('data', 'processed')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        
+    np.save(os.path.join(save_path, 'X_train.npy'), X)
+    np.save(os.path.join(save_path, 'y_train.npy'), y)
+    np.save(os.path.join(save_path, 'X_test.npy'), X)
+    np.save(os.path.join(save_path, 'y_test.npy'), y)
+    
+    print(f"\nSUCESSO! Dados processados e cortados em 30 frames.")
+    print(f"Formato final: {X.shape}") 
 
 if __name__ == "__main__":
-    print("--- Iniciando Pré-processamento ---")
-    
-    X, y, max_len, actions_map = carregar_e_processar_dados()
-    
-    # 5. Divisão Treino e Teste (O Padrão Ouro do TCC)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42) # 10% para teste
-
-    print("\n--- Relatório Final ---")
-    print(f"Dados de Treino: {X_train.shape}") # (Qtd Videos, Frames, Features)
-    print(f"Dados de Teste:  {X_test.shape}")
-    
-    # 6. Salvar tudo processado para a IA pegar pronto
-    # Cria pasta 'processed' se não existir
-    if not os.path.exists('data/processed'):
-        os.makedirs('data/processed')
-
-    np.save('data/processed/X_train.npy', X_train)
-    np.save('data/processed/X_test.npy', X_test)
-    np.save('data/processed/y_train.npy', y_train)
-    np.save('data/processed/y_test.npy', y_test)
-    
-    # Salva o mapa de classes (pra saber quem é quem depois)
-    np.save('models/label_encoder.npy', actions_map) # Salva em models ou data
-    
-    print("Dados salvos em 'data/processed/'. Pronto para treinar!")
+    process_data()

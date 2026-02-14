@@ -1,8 +1,8 @@
 import numpy as np
 import os
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.keras.models import Sequential # type: ignore
+from tensorflow.keras.layers import LSTM, Dense # type: ignore
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping # type: ignore
 
 # --- CONFIGURAÇÕES ---
 # Caminho onde estão os arquivos .npy gerados pelo preprocess_data.py
