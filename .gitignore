@@ -1,18 +1,42 @@
-# Python
+# --- Python & Ambiente ---
 __pycache__/
 *.pyc
 .env
 venv/
 *.egg-info/
 
-# Dados - NUNCA ENVIE DADOS PARA O GIT
-data/
-
-# Segredos - NUNCA ENVIE CHAVES PARA O GIT
-credentials/
-*.json
-*.csv
-
-# IDEs
+# --- IDEs ---
 .vscode/
 .idea/
+
+# --- DADOS (Onde moram os vídeos) ---
+# Garante que qualquer nome comum de pasta de dados seja ignorado
+data/
+dataset/
+datasets/
+videos/
+
+# --- ARQUIVOS DE MÍDIA (Segurança Extra) ---
+# Caso você deixe um vídeo solto na raiz sem querer
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# --- MODELOS DE IA (Pesos Treinados - MUITO IMPORTANTE) ---
+# Estes arquivos são pesados e gerados pelo treino
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.keras
+*.onnx
+
+# --- DADOS PROCESSADOS (MediaPipe) ---
+# Ignora numpy arrays salvos, mas permite CSV/JSON se você quiser
+# (Se quiser bloquear todos CSVs, mantenha o *.csv que você tinha)
+*.npy
+*.npz
+
+# --- SEGREDOS ---
+credentials/
