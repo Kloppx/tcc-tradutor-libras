@@ -1,0 +1,62 @@
+# 🏥 Interpretarte - Sistema de Acessibilidade em Saúde (Libras + AI)
+
+**Projeto Integrado: Mobile (React Native) & AI Engine (Python)** *Desenvolvido para o TCC de Sistemas de informação - CESMAC 2026*
+
+O **Interpretarte** é uma solução completa de acessibilidade para Unidades Básicas de Saúde (UBS). Ele combina uma interface mobile robusta para gestão clínica com um motor de inteligência artificial em Python capaz de traduzir a Língua Brasileira de Sinais (Libras) em tempo real, facilitando o atendimento de pacientes surdos.
+
+---
+
+## 🏗️ Arquitetura do Sistema
+
+O projeto é dividido em dois núcleos principais que se comunicam para garantir um fluxo de dados íntegro e performático:
+
+
+
+1. **Client (Mobile)**: Desenvolvido em **React Native**, gerencia a recepção, triagem de enfermagem e o prontuário médico.
+2. **Brain (AI Engine)**: Desenvolvido em **Python**, utiliza visão computacional para processar frames de vídeo e extrair significados linguísticos.
+
+---
+
+## 🐍 Núcleo de Inteligência Artificial (Python)
+
+O motor de tradução atua como o núcleo de processamento do sistema:
+
+- **Visão Computacional**: Uso de `OpenCV` e `MediaPipe` para mapeamento de *landmarks* articulares das mãos e face.
+- **Processamento de Sequência**: Implementação de modelos [LSTM/Random Forest/MediaPipe Hands] para reconhecimento de gestos dinâmicos.
+- **Integração de Dados**: Backend estruturado em [FastAPI/Flask] para fornecer as predições ao aplicativo móvel com baixa latência.
+
+---
+
+## 📱 Interface Mobile (React Native)
+
+Focada na usabilidade do profissional de saúde e na experiência do paciente:
+
+- **Perfis de Acesso (RBAC)**: Distinção clara entre fluxos de Enfermagem (Triagem) e Médico (Consulta).
+- **BI & Analytics**: Dashboards integrados com `react-native-chart-kit` para monitoramento do fluxo de pacientes.
+- **Validação e UX**: Máscaras de dados, integração com **API ViaCEP** e notificações profissionais com `react-native-toast-message`.
+- **Hospedagem**: Deploys via **EAS Update** para atualizações rápidas.
+
+---
+
+## 📊 Perspectiva de Business Intelligence
+
+Como analista de BI, o projeto foi estruturado para gerar dados limpos e acionáveis:
+- **Integridade**: Separação de camadas de dados (Cadastro -> Triagem -> Diagnóstico).
+- **Eficiência**: Gráficos de volume de atendimento para gestão de gargalos em UBS públicas.
+- **Acessibilidade**: Botão flutuante de Libras presente em todas as etapas do atendimento.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+| Camada | Tecnologias |
+| :--- | :--- |
+| **Mobile** | React Native, Expo, TypeScript, React Navigation |
+| **Inteligência Artificial** | Python, MediaPipe, OpenCV, Scikit-Learn |
+| **Integração/API** | FastAPI, WebSockets, ViaCEP API |
+| **DevOps/Deploy** | Git (PR Flow), EAS Update |
+
+---
+
+## 👨‍💻 Autor
+Victor Hugo Nascimento Calheiros, Analista de Business Intelligence & Estudante de Tecnologia no CESMAC. Maceió, Alagoas.
