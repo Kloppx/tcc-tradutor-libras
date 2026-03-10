@@ -1,109 +1,121 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
-  Keyboard 
-} from 'react-native';
-import LibrasInput from '../components/LibrasInput';
-import { RootStackScreenProps } from '../types/navigation';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
+import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
-type Props = RootStackScreenProps<'Anamnese'>;
+export default function AnamneseScreen({ navigation }: any) {
+  const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [peso, setPeso] = useState(''); // Adicionei o Peso para evitar o erro na próxima tela
+  const [motivo, setMotivo] = useState('');
 
-export default function AnamneseScreen({ navigation }: Props) {
-  const [peso, setPeso] = useState('');
-  const [altura, setAltura] = useState('');
-  const [alergias, setAlergias] = useState('');
+  // Máscara de CPF Corrigida
+  const maskCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
 
-  const handleContinuar = () => {
-    if (!peso || !altura) {
-      Alert.alert("Atenção", "Por favor, preencha peso e altura antes de continuar.");
+  const handleNext = () => {
+    const cpfLimpo = cpf.replace(/\D/g, '');
+
+    if (nome.trim().length < 3) {
+      Toast.show({ type: 'error', text1: 'Nome incompleto' });
       return;
     }
-    // Navega para a tela do corpo repassando os dados coletados
+    
+    if (cpfLimpo.length !== 11) {
+      Toast.show({ type: 'error', text1: 'CPF Inválido' });
+      return;
+    }
+
+    // Enviando os dados para a próxima tela para evitar o erro de "undefined"
     navigation.navigate('BodySelection', { 
-      peso: peso, 
-      altura: altura 
+      paciente: {
+        nome,
+        cpf: cpfLimpo,
+        peso: peso || "Não informado", // Aqui a gente garante que o 'peso' existe
+        motivo
+      }
     });
   };
 
   return (
-    // 1. Evita que o teclado cubra os inputs
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={80} // Ajuste conforme a altura do seu header
-    >
-      {/* 2. Permite fechar o teclado ao tocar em qualquer área vazia */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView 
-          style={styles.container} 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.header}>
-            <Text style={styles.title}>Ficha de Triagem</Text>
-            <Text style={styles.subtitle}>Preencha seus dados básicos.</Text>
-          </View>
+    <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <HealthHeader title="Sua Identificação" />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back-outline" size={26} color="#2196F3" />
+        </TouchableOpacity>
+      </View>
 
-          <View style={styles.form}>
-            <LibrasInput 
-              label="Peso (kg)*" 
-              placeholder="Ex: 70" 
-              keyboardType="numeric"
-              value={peso}
-              onChangeText={setPeso}
-              sinalDescricao="Vídeo: Sinal de 'PESO' + 'QUAL?'"
-            />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={styles.label}>Nome Completo</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="Digite seu nome"
+            value={nome}
+            onChangeText={setNome}
+          />
 
-            <LibrasInput 
-              label="Altura (cm)*" 
-              placeholder="Ex: 175" 
-              keyboardType="numeric"
-              value={altura}
-              onChangeText={setAltura}
-              sinalDescricao="Vídeo: Sinal de 'ALTURA' + 'QUAL?'"
-            />
+          <Text style={styles.label}>CPF</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="000.000.000-00"
+            keyboardType="numeric"
+            value={cpf}
+            onChangeText={(txt) => setCpf(maskCPF(txt))}
+            maxLength={14}
+          />
 
-            <LibrasInput 
-              label="Possui Alergias?" 
-              placeholder="Ex: Dipirona, Frutos do mar..." 
-              value={alergias}
-              onChangeText={setAlergias}
-              sinalDescricao="Vídeo: Sinal de 'ALERGIA' + 'TEM?'"
-            />
-            
-            <TouchableOpacity style={styles.button} onPress={handleContinuar}>
-              <Text style={styles.buttonText}>Continuar</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.label}>Peso (opcional)</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="Ex: 75"
+            keyboardType="numeric"
+            value={peso}
+            onChangeText={setPeso}
+            maxLength={3}
+          />
+
+          <Text style={styles.label}>O que você está sentindo?</Text>
+          <TextInput 
+            style={[styles.input, styles.textArea]} 
+            placeholder="Ex: Dor de cabeça..."
+            multiline
+            value={motivo}
+            onChangeText={setMotivo}
+          />
+
+          <TouchableOpacity style={styles.btnNext} onPress={handleNext}>
+            <Text style={styles.btnText}>PRÓXIMO PASSO</Text>
+            <Ionicons name="arrow-forward" size={20} color="#fff" />
+          </TouchableOpacity>
         </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+      <LibrasFAB />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa' },
-  scrollContent: { flexGrow: 1 }, // Garante que o ScrollView ocupe o espaço necessário
-  header: { padding: 20, backgroundColor: '#fff', marginBottom: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#2196F3' },
-  subtitle: { fontSize: 16, color: '#666', marginTop: 5 },
-  form: { padding: 20 },
-  button: { 
-    backgroundColor: '#FF9800', 
-    padding: 18, 
-    borderRadius: 12, 
+  container: { flex: 1, backgroundColor: '#fff' },
+  headerRow: { 
+    flexDirection: 'row', 
     alignItems: 'center', 
-    marginTop: 20, 
-    elevation: 3,
-    marginBottom: 40 // Espaço extra no final para não ficar colado no teclado
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingTop: 50, paddingHorizontal: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee'
   },
-  buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+  scroll: { padding: 25 },
+  label: { fontSize: 14, fontWeight: 'bold', color: '#444', marginBottom: 8 },
+  input: { backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 15, marginBottom: 20, fontSize: 16 },
+  textArea: { height: 100, textAlignVertical: 'top' },
+  btnNext: { backgroundColor: '#2196F3', flexDirection: 'row', padding: 20, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginRight: 10 }
 });

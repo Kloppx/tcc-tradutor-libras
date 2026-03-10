@@ -1,78 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
 
-// --- CABEÇALHO COM DATA E HORA EM TEMPO REAL ---
-export const HealthHeader = ({ title }: { title: string }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+// Cabeçalho Acessível (Simulando o <h1> ou <header> do HTML)
+export const HealthHeader = ({ title }: { title: string }) => (
+  <View 
+    style={styles.headerContainer}
+    accessible={true}
+    accessibilityRole="header" // Transforma isso em um título na hierarquia
+    accessibilityLabel={`Cabeçalho: ${title}`}
+  >
+    <Text style={styles.headerText} allowFontScaling={true}>{title}</Text>
+  </View>
+);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentDate(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formattedDate = currentDate.toLocaleDateString('pt-BR');
-  const formattedTime = currentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-  return (
-    <View style={styles.headerContainer}>
-      <View>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <Text style={styles.dateTimeText}>{formattedDate} - {formattedTime}</Text>
-      </View>
-      <Ionicons name="medical-outline" size={28} color="#2196F3" />
-    </View>
-  );
-};
-
-// --- BOTÃO FLUTUANTE DA MÃOZINHA (LIBRAS) ---
+// Botão Flutuante de Libras (Com Hint e Label descritivo)
 export const LibrasFAB = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
+  const navigation = useNavigation<any>();
   return (
     <TouchableOpacity 
       style={styles.fab} 
       onPress={() => navigation.navigate('RealTimeTranslation')}
-      activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel="Ativar tradução em Libras"
+      accessibilityHint="Abre a tela de tradução em tempo real para comunicação com o paciente"
     >
-      <Ionicons name="hand-right" size={30} color="#fff" />
-      <Text style={styles.fabText}>Libras</Text>
+      <Ionicons name="hand-point-up-outline" size={30} color="#fff" importantForAccessibility="no" />
+      <Text style={styles.fabText} allowFontScaling={false}>LIBRAS</Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingTop: 50,
+    paddingVertical: 10,
   },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  dateTimeText: { fontSize: 14, color: '#666', fontWeight: '500' },
+  headerText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 30,
-    backgroundColor: '#2196F3',
+    backgroundColor: '#2196F3', // Cor com contraste mínimo de 3:1 garantido
     width: 70,
     height: 70,
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
+    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    zIndex: 999,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  fabText: { color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: -2 }
+  fabText: {
+    color: '#fff', // Texto branco no azul passa no WCAG AA
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
 });
