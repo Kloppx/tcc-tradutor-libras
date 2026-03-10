@@ -15,7 +15,11 @@ export type RootStackParamList = {
   SelectionProfile: undefined;
   ProntuarioMedico: undefined;
   EnfermagemDashboard: undefined;
-  ProcedimentosEnfermagem: undefined
+  ProcedimentosEnfermagem: undefined;
+  ProfissionalSignup: undefined;
+  MedicoDashboard: undefined;
+  PacienteCadastro: undefined;
+  PacienteEspera: { pacienteNome: string };
 };
 
 // Helper para usar nas telas

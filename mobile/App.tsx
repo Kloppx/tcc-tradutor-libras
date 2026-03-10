@@ -4,29 +4,43 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message'; // BÔNUS: Biblioteca Externa (+0,5 ponto)
+import Toast from 'react-native-toast-message';
 
-// Importando Telas e Tipos
+// --- IMPORTAÇÕES DAS TELAS ---
+
+// 1. Autenticação e Entrada
 import LoginScreen from './src/screens/LoginScreen';
+import ProfissionalSignupScreen from './src/screens/ProfissionalSignupScreen';
+
+// 2. Fluxo do Paciente (Novo Totem)
+import RecepcaoScreen from './src/screens/RecepcaoScreen';
+import PacienteCadastroScreen from './src/screens/PacienteCadastroScreen';
+import PacienteEsperaScreen from './src/screens/PacienteEsperaScreen';
+
+// 3. Fluxo do Médico
+import MedicoDashboardScreen from './src/screens/MedicoDashboardScreen';
+import ProntuarioMedicoScreen from './src/screens/ProntuarioMedicoScreen';
+
+// 4. Fluxo da Enfermagem
+import EnfermagemDashboardScreen from './src/screens/EnfermagemDashboardScreen';
+import ProcedimentosEnfermagemScreen from './src/screens/ProcedimentosEnfermagemScreen';
+import TriagemAvancadaScreen from './src/screens/TriagemAvancadaScreen';
+
+// 5. Auxiliares e Componentes Globais
 import HomeScreen from './src/screens/HomeScreen';
-import AnamneseScreen from './src/screens/AnamneseScreen';
+import RealTimeTranslationScreen from './src/screens/RealTimeTranslationScreen';
+import AnamneseScreen from './src/screens/AnamneseScreen'; // Mantido caso use em outra triagem
 import BodySelectionScreen from './src/screens/BodySelectionScreen';
 import SintomasScreen from './src/screens/SintomasScreen';
 import ResumoScreen from './src/screens/ResumoScreen';
-import ProfissionalScreen from './src/screens/ProfissionalScreen';
-import RealTimeTranslationScreen from './src/screens/RealTimeTranslationScreen';
-import TriagemAvancadaScreen from './src/screens/TriagemAvancadaScreen'; 
-import RecepcaoScreen from './src/screens/RecepcaoScreen'; 
-import SelectionProfileScreen from './src/screens/SelectionProfileScreen';
-import ProntuarioMedicoScreen from './src/screens/ProntuarioMedicoScreen';
-import ProcedimentosEnfermagemScreen from './src/screens/ProcedimentosEnfermagemScreen';
-import EnfermagemDashboardScreen from './src/screens/EnfermagemDashboardScreen';
+
+// Tipagem de Rotas
 import { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// Menu Inferior do Paciente (BÔNUS: Subnavegação +0,5 ponto)
+// Tabs do Paciente (Opcional, caso ele acesse logado pelo celular)
 function PacienteTabs() {
   return (
     <Tab.Navigator
@@ -53,102 +67,36 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* 1. AUTENTICAÇÃO E FLUXO INICIAL */}
+        
+        {/* === AUTENTICAÇÃO E CADASTRO === */}
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ProfissionalSignup" component={ProfissionalSignupScreen} />
+        
+        {/* === FLUXO DO PACIENTE (RECEPCAO / TOTEM) === */}
+        <Stack.Screen name="Recepcao" component={RecepcaoScreen} />
+        <Stack.Screen name="PacienteCadastro" component={PacienteCadastroScreen} />
+        <Stack.Screen name="PacienteEspera" component={PacienteEsperaScreen} />
         <Stack.Screen name="PacienteFlow" component={PacienteTabs} />
 
-        {/* 2. SELEÇÃO DE PERFIL PROFISSIONAL */}
-        <Stack.Screen
-          name="SelectionProfile"
-          component={SelectionProfileScreen}
-        />
-        
-        {/* 3. FLUXO DE ENFERMAGEM */}
-        <Stack.Screen
-          name="EnfermagemDashboard"
-          component={EnfermagemDashboardScreen}
-        />
-        <Stack.Screen
-          name="ProcedimentosEnfermagem"
-          component={ProcedimentosEnfermagemScreen}
-        />
-        <Stack.Screen 
-          name="TriagemAvancada" 
-          component={TriagemAvancadaScreen} 
-          options={{ headerShown: false }} 
-        />
+        {/* === FLUXO MÉDICO === */}
+        <Stack.Screen name="MedicoDashboard" component={MedicoDashboardScreen} />
+        <Stack.Screen name="ProntuarioMedico" component={ProntuarioMedicoScreen} />
 
-        {/* 4. FLUXO MÉDICO */}
-        <Stack.Screen
-          name="ProntuarioMedico"
-          component={ProntuarioMedicoScreen}
-        />
+        {/* === FLUXO ENFERMAGEM === */}
+        <Stack.Screen name="EnfermagemDashboard" component={EnfermagemDashboardScreen} />
+        <Stack.Screen name="ProcedimentosEnfermagem" component={ProcedimentosEnfermagemScreen} />
+        <Stack.Screen name="TriagemAvancada" component={TriagemAvancadaScreen} />
 
-        {/* 5. FLUXO PACIENTE / RECEPÇÃO */}
-        <Stack.Screen 
-          name="Recepcao" 
-          component={RecepcaoScreen} 
-          options={{ headerShown: false }} 
-        />
+        {/* === TELAS AUXILIARES E GLOBAIS === */}
+        <Stack.Screen name="Anamnese" component={AnamneseScreen} />
+        <Stack.Screen name="BodySelection" component={BodySelectionScreen} />
+        <Stack.Screen name="Sintomas" component={SintomasScreen} />
+        <Stack.Screen name="Resumo" component={ResumoScreen} />
+        <Stack.Screen name="RealTimeTranslation" component={RealTimeTranslationScreen} />
 
-        {/* TELAS AUXILIARES / LEGADO */}
-        <Stack.Screen 
-          name="Anamnese" 
-          component={AnamneseScreen} 
-          options={{ 
-            headerShown: true, 
-            title: 'Identificação',
-            headerStyle: { backgroundColor: '#2196F3' },
-            headerTintColor: '#fff'
-          }} 
-        />
-        <Stack.Screen 
-          name="BodySelection" 
-          component={BodySelectionScreen} 
-          options={{ 
-            headerShown: true, 
-            title: 'Mapa Corporal', 
-            headerStyle: { backgroundColor: '#2196F3' }, 
-            headerTintColor: '#fff' 
-          }} 
-        />
-        <Stack.Screen 
-          name="Sintomas" 
-          component={SintomasScreen} 
-          options={{ 
-            headerShown: true,
-            title: 'Sintomas', 
-            headerStyle: { backgroundColor: '#2196F3' }, 
-            headerTintColor: '#fff' 
-          }} 
-        />
-        <Stack.Screen 
-          name="Resumo" 
-          component={ResumoScreen} 
-          options={{ 
-            headerShown: true,
-            title: 'Resumo da Triagem', 
-            headerStyle: { backgroundColor: '#4CAF50' }, 
-            headerTintColor: '#fff' 
-          }} 
-        />
-        <Stack.Screen 
-          name="RealTimeTranslation" 
-          component={RealTimeTranslationScreen} 
-          options={{ 
-            headerShown: true,
-            title: 'Tradutor de Libras', 
-            headerStyle: { backgroundColor: '#2196F3' }, 
-            headerTintColor: '#fff' 
-          }} 
-        />
-        <Stack.Screen
-          name="ProfissionalHome"
-          component={ProfissionalScreen}
-        />
       </Stack.Navigator>
 
-      {/* COMPONENTE TOAST: Deve ficar aqui para sobrepor todas as telas */}
+      {/* Componente Global de Toast para Alertas Visuais */}
       <Toast />
     </NavigationContainer>
   );
