@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,7 +9,8 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f7" />
       <HealthHeader title="Meu Atendimento" />
       
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -35,18 +37,18 @@ export default function HomeScreen() {
         <View style={styles.row}>
           <TouchableOpacity 
             style={styles.miniCard} 
-            onPress={() => navigation.navigate('UBS')}
+            onPress={() => navigation.navigate('Main', { screen: 'Recursos' })}
           >
             <Ionicons name="map-outline" size={24} color="#2196F3" />
-            <Text style={styles.miniCardText}>UBS Maceió</Text>
+            <Text style={styles.miniCardText}>Recursos Nativos</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.miniCard}
-            onPress={() => navigation.navigate('Sobre')}
+            onPress={() => navigation.navigate('RealTimeTranslation')}
           >
-            <Ionicons name="help-circle-outline" size={24} color="#2196F3" />
-            <Text style={styles.miniCardText}>Como funciona</Text>
+            <Ionicons name="camera-outline" size={24} color="#2196F3" />
+            <Text style={styles.miniCardText}>Tradutor Libras</Text>
           </TouchableOpacity>
         </View>
 
@@ -60,7 +62,7 @@ export default function HomeScreen() {
 
       {/* Acessibilidade sempre presente */}
       <LibrasFAB />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -45,7 +45,7 @@ export default function SintomasScreen({ route, navigation }: Props) {
     Alert.alert(
       "Triagem Finalizada", 
       `Região: ${region}\nSintomas: ${selecionados.join(', ')}\n\nObrigado! Aguarde ser chamado.`,
-      [{ text: "OK", onPress: () => navigation.navigate('PacienteFlow') }] // Volta pra Home
+      [{ text: "OK", onPress: () => navigation.navigate('SelectionProfile') }]
     );
   };
 

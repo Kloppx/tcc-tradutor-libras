@@ -58,5 +58,43 @@ Como analista de BI, o projeto foi estruturado para gerar dados limpos e acioná
 
 ---
 
+## ⚙️ Configuração de Ambiente (Mobile)
+
+No diretório [mobile/.env.example](mobile/.env.example) existe um modelo para configurar a URL do WebSocket de tradução.
+
+1. Copie o arquivo `.env.example` para `.env` dentro de `mobile`.
+2. Ajuste `EXPO_PUBLIC_WS_URL` para o ambiente de teste:
+	- Emulador Android: `ws://10.0.2.2:8000/ws/predict`
+	- Celular físico: `ws://SEU_IP_LOCAL:8000/ws/predict`
+
+---
+
+## 🚀 EAS Update
+
+O projeto já inclui configuração em [mobile/eas.json](mobile/eas.json) com canais:
+- `development`
+- `preview`
+- `production`
+
+Fluxo básico para publicar update OTA:
+
+```bash
+cd mobile
+npx eas login
+npx eas update:configure
+npx eas update --branch production --message "Atualização de interface e fluxo"
+```
+
+Atalhos via scripts NPM no diretório `mobile`:
+
+```bash
+npm run eas:update:preview
+npm run eas:update:production
+npm run eas:build:preview:android
+npm run eas:build:production:android
+```
+
+---
+
 ## 👨‍💻 Autor
 Victor Hugo Nascimento Calheiros, Analista de Business Intelligence & Estudante de Tecnologia no CESMAC. Maceió, Alagoas.

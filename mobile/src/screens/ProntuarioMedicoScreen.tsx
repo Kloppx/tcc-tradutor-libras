@@ -1,45 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
+import Toast from 'react-native-toast-message';
+import { RootStackScreenProps } from '../types/navigation';
 
-export default function ProntuarioMedicoScreen() {
+type Props = RootStackScreenProps<'ProntuarioMedico'>;
+
+export default function ProntuarioMedicoScreen({ route, navigation }: Props) {
+  const { paciente } = route.params;
+  const [anamnese, setAnamnese] = useState('');
+  const [conduta, setConduta] = useState('');
+
+  const triagem = paciente.triagem || {};
+
+  const finalizarAtendimento = () => {
+    Toast.show({
+      type: 'success',
+      text1: 'Atendimento finalizado',
+      text2: `Prontuário de ${paciente.nome} atualizado com sucesso.`,
+    });
+    navigation.goBack();
+  };
+
   return (
     <View style={styles.container}>
       <HealthHeader title="Atendimento Clínico" />
       <ScrollView contentContainerStyle={styles.scroll}>
-        
-        {/* RESUMO DA TRIAGEM (DADOS DA ENFERMEIRA) */}
+        <View style={styles.patientHeader}>
+          <Text style={styles.patientName}>{paciente.nome}</Text>
+          <Text style={styles.patientMeta}>
+            Senha: {paciente.senha || '--'} • Risco: {paciente.risco || '--'}
+          </Text>
+        </View>
+
         <View style={styles.triageCard}>
           <Text style={styles.sectionTitle}>Resumo da Triagem (Enfermagem)</Text>
           <View style={styles.triageGrid}>
-            <View style={styles.triageItem}><Text style={styles.triageLabel}>PA:</Text><Text style={styles.triageValue}>12/8</Text></View>
-            <View style={styles.triageItem}><Text style={styles.triageLabel}>Temp:</Text><Text style={styles.triageValue}>36.5°C</Text></View>
-            <View style={styles.triageItem}><Text style={styles.triageLabel}>SPO2:</Text><Text style={styles.triageValue}>98%</Text></View>
-            <View style={styles.triageItem}><Text style={styles.triageLabel}>Peso:</Text><Text style={styles.triageValue}>75kg</Text></View>
+            <View style={styles.triageItem}><Text style={styles.triageLabel}>PA:</Text><Text style={styles.triageValue}>{triagem.pa || '--'}</Text></View>
+            <View style={styles.triageItem}><Text style={styles.triageLabel}>Temp:</Text><Text style={styles.triageValue}>{triagem.temp ? `${triagem.temp} C` : '--'}</Text></View>
+            <View style={styles.triageItem}><Text style={styles.triageLabel}>SpO2:</Text><Text style={styles.triageValue}>{triagem.spo2 ? `${triagem.spo2}%` : '--'}</Text></View>
+            <View style={styles.triageItem}><Text style={styles.triageLabel}>Peso:</Text><Text style={styles.triageValue}>{triagem.peso ? `${triagem.peso} kg` : '--'}</Text></View>
           </View>
-          <Text style={styles.complaint}>Queixa: Dor de cabeça constante e sensibilidade à luz.</Text>
+          <Text style={styles.complaint}>Queixa principal: {triagem.queixa || 'Não informada'}</Text>
         </View>
 
-        {/* EVOLUÇÃO MÉDICA */}
         <View style={styles.formCard}>
           <Text style={styles.label}>Anamnese e Evolução</Text>
-          <TextInput 
-            style={styles.textArea} 
-            placeholder="Descreva a conduta clínica..." 
-            multiline 
-            numberOfLines={10} 
+          <TextInput
+            style={styles.textArea}
+            placeholder="Descreva a conduta clínica..."
+            multiline
+            numberOfLines={8}
+            value={anamnese}
+            onChangeText={setAnamnese}
           />
-          
-          <Text style={styles.label}>Prescrição / Conduta</Text>
-          <TextInput style={styles.input} placeholder="Medicamentos ou exames" />
 
-          <TouchableOpacity style={styles.btnFinish}>
+          <Text style={styles.label}>Prescrição / Conduta</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Medicamentos, exames ou orientações"
+            value={conduta}
+            onChangeText={setConduta}
+          />
+
+          <TouchableOpacity style={styles.btnFinish} onPress={finalizarAtendimento}>
             <Text style={styles.btnText}>FINALIZAR ATENDIMENTO</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Botão de Libras para abrir o Tradutor Python */}
       <LibrasFAB />
     </View>
   );
@@ -47,7 +76,17 @@ export default function ProntuarioMedicoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f7' },
-  scroll: { padding: 15 },
+  scroll: { padding: 15, paddingBottom: 90 },
+  patientHeader: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#1976D2',
+  },
+  patientName: { fontSize: 19, fontWeight: 'bold', color: '#1C3A59' },
+  patientMeta: { marginTop: 4, color: '#5A7896', fontSize: 14 },
   triageCard: { backgroundColor: '#E3F2FD', padding: 15, borderRadius: 12, marginBottom: 20, borderLeftWidth: 5, borderLeftColor: '#2196F3' },
   sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#1976D2', marginBottom: 10 },
   triageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
@@ -60,5 +99,5 @@ const styles = StyleSheet.create({
   textArea: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 12, textAlignVertical: 'top', marginBottom: 20, borderWidth: 1, borderColor: '#eee' },
   input: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 12, marginBottom: 20, borderWidth: 1, borderColor: '#eee' },
   btnFinish: { backgroundColor: '#4CAF50', padding: 18, borderRadius: 10, alignItems: 'center' },
-  btnText: { color: '#fff', fontWeight: 'bold' }
+  btnText: { color: '#fff', fontWeight: 'bold' },
 });

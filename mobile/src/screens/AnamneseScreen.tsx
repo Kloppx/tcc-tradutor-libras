@@ -7,7 +7,8 @@ import Toast from 'react-native-toast-message';
 export default function AnamneseScreen({ navigation }: any) {
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
-  const [peso, setPeso] = useState(''); // Adicionei o Peso para evitar o erro na próxima tela
+  const [peso, setPeso] = useState('');
+  const [altura, setAltura] = useState('');
   const [motivo, setMotivo] = useState('');
 
   // Máscara de CPF Corrigida
@@ -33,14 +34,15 @@ export default function AnamneseScreen({ navigation }: any) {
       return;
     }
 
-    // Enviando os dados para a próxima tela para evitar o erro de "undefined"
+    if (motivo.trim().length < 3) {
+      Toast.show({ type: 'error', text1: 'Queixa principal incompleta' });
+      return;
+    }
+
+    // A tela BodySelection espera apenas peso e altura.
     navigation.navigate('BodySelection', { 
-      paciente: {
-        nome,
-        cpf: cpfLimpo,
-        peso: peso || "Não informado", // Aqui a gente garante que o 'peso' existe
-        motivo
-      }
+      peso: peso || '0',
+      altura: altura || '0',
     });
   };
 
@@ -81,6 +83,16 @@ export default function AnamneseScreen({ navigation }: any) {
             value={peso}
             onChangeText={setPeso}
             maxLength={3}
+          />
+
+          <Text style={styles.label}>Altura (opcional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: 1.70"
+            keyboardType="numeric"
+            value={altura}
+            onChangeText={setAltura}
+            maxLength={4}
           />
 
           <Text style={styles.label}>O que você está sentindo?</Text>

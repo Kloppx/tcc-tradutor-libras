@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 // --- CONFIGURAÇÃO ---
-// ⚠️ IMPORTANTE: Troque pelo IP do seu Notebook (veja no ipconfig/ifconfig)
-// Se estiver no emulador Android, use '10.0.2.2'. No celular físico, use o IP da rede (ex: 192.168.1.15)
-const WS_URL = 'ws://192.168.10.71:8000/ws/predict'; 
+// Prioriza variável de ambiente (EXPO_PUBLIC_WS_URL).
+// Fallback para desenvolvimento local quando a variável não estiver definida.
+const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.10.71:8000/ws/predict';
 
 export default function RealTimeTranslationScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -17,27 +18,6 @@ export default function RealTimeTranslationScreen() {
   const cameraRef = useRef<CameraView>(null);
   const ws = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 1. Gerenciar Permissão da Câmera
-  if (!permission) return <View />;
-  if (!permission.granted) {
-    return (
-      <View style={styles.center}>
-        <Text style={{textAlign:'center', marginBottom: 20}}>Precisamos da câmera para traduzir seus sinais.</Text>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-          <Text style={styles.btnText}>Permitir Câmera</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // 2. Conectar no WebSocket (Python) ao abrir a tela
-  useEffect(() => {
-    connectWebSocket();
-    return () => {
-      stopTranslation(); // Limpa tudo ao sair da tela
-    };
-  }, []);
 
   const connectWebSocket = () => {
     try {
@@ -59,12 +39,22 @@ export default function RealTimeTranslationScreen() {
       };
 
       ws.current.onerror = (e) => {
-        console.log("❌ Erro no WebSocket:", e);
+        console.log('WebSocket error: falha ao conectar no servidor de tradução.');
+        setIsConnected(false);
+        setTranslation('Servidor de tradução indisponível');
+        setConfidence(0);
+        Toast.show({
+          type: 'error',
+          text1: 'Falha na conexão',
+          text2: 'Verifique se o servidor Python está ativo e acessível na rede.',
+        });
       };
 
       ws.current.onclose = () => {
         console.log("🔴 Desconectado");
         setIsConnected(false);
+        setTranslation('Aguardando conexão com o servidor...');
+        setConfidence(0);
         stopStreaming();
       };
     } catch (error) {
@@ -106,6 +96,29 @@ export default function RealTimeTranslationScreen() {
     stopStreaming();
     ws.current?.close();
   };
+
+  // Mantem a ordem dos hooks estavel e conecta somente quando a camera estiver liberada.
+  useEffect(() => {
+    if (!permission?.granted) return;
+
+    connectWebSocket();
+    return () => {
+      stopTranslation();
+    };
+  }, [permission?.granted]);
+
+  // 1. Gerenciar Permissão da Câmera
+  if (!permission) return <View style={styles.container} />;
+  if (!permission.granted) {
+    return (
+      <View style={styles.center}>
+        <Text style={{textAlign:'center', marginBottom: 20}}>Precisamos da câmera para traduzir seus sinais.</Text>
+        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
+          <Text style={styles.btnText}>Permitir Câmera</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
