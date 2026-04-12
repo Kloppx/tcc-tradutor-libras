@@ -48,7 +48,7 @@ export default function ResumoScreen({ route, navigation }: Props) {
 
         <TouchableOpacity 
           style={styles.btnHome} 
-          onPress={() => navigation.navigate('PacienteFlow')}
+          onPress={() => navigation.navigate('SelectionProfile')}
         >
           <Text style={styles.btnHomeText}>Voltar para Início</Text>
         </TouchableOpacity>

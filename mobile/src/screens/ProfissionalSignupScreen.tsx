@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, TextInput, TouchableOpacity, 
-  ScrollView, KeyboardAvoidingView, Platform 
+  ScrollView, KeyboardAvoidingView, Platform, StatusBar
 } from 'react-native';
-import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function ProfissionalSignupScreen({ navigation }: any) {
+export default function ProfissionalSignupScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [conselho, setConselho] = useState('');
   const [senha, setSenha] = useState('');
-  
-  // Lógica de Diferenciação: Estado para o Cargo
   const [cargo, setCargo] = useState<'Enfermeiro' | 'Medico' | null>(null);
 
   const handleSignup = () => {
@@ -25,10 +28,9 @@ export default function ProfissionalSignupScreen({ navigation }: any) {
       return;
     }
 
-    // No BI, aqui estaríamos classificando o registro na dimensão 'Dim_Profissional'
     Toast.show({
       type: 'success',
-      text1: 'Solicitação Enviada! 📩',
+      text1: 'Solicitação Enviada!',
       text2: `Aguarde a validação do seu ${cargo === 'Medico' ? 'CRM' : 'COREN'}.`
     });
     
@@ -37,123 +39,152 @@ export default function ProfissionalSignupScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <HealthHeader title="Cadastro Profissional" />
-      
+      <StatusBar barStyle="dark-content" backgroundColor="#F0F4F8" />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.card}>
-            <Text style={styles.infoText}>
-              Identifique sua categoria profissional para liberar as funções específicas na UBS.
-            </Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back-outline" size={28} color="#333" />
+          </TouchableOpacity>
 
-            {/* SELETOR DE CARGO (Diferenciação Visual) */}
-            <Text style={styles.label}>Selecione sua categoria:</Text>
-            <View style={styles.row}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.headerTitle}>Cadastro Profissional</Text>
+            <Text style={styles.headerSubtitle}>Solicite seu acesso ao sistema.</Text>
+          </View>
+
+          <View style={styles.form}>
+            <Text style={styles.label}>Selecione sua categoria profissional:</Text>
+            <View style={styles.chipContainer}>
               <TouchableOpacity 
-                style={[
-                  styles.chip, 
-                  cargo === 'Enfermeiro' && styles.chipEnfermeiroActive
-                ]} 
+                style={[styles.chip, cargo === 'Enfermeiro' && styles.chipActive]} 
                 onPress={() => setCargo('Enfermeiro')}
               >
-                <Text style={[
-                  styles.chipText, 
-                  cargo === 'Enfermeiro' && styles.textWhite
-                ]}>ENFERMEIRO (COREN)</Text>
+                <Ionicons name="medkit-outline" size={20} color={cargo === 'Enfermeiro' ? '#fff' : '#3498DB'} />
+                <Text style={[styles.chipText, cargo === 'Enfermeiro' && styles.chipTextActive]}>Enfermagem</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[
-                  styles.chip, 
-                  cargo === 'Medico' && styles.chipMedicoActive
-                ]} 
+                style={[styles.chip, cargo === 'Medico' && styles.chipActive]} 
                 onPress={() => setCargo('Medico')}
               >
-                <Text style={[
-                  styles.chipText, 
-                  cargo === 'Medico' && styles.textWhite
-                ]}>MÉDICO (CRM)</Text>
+                <Ionicons name="pulse-outline" size={20} color={cargo === 'Medico' ? '#fff' : '#3498DB'} />
+                <Text style={[styles.chipText, cargo === 'Medico' && styles.chipTextActive]}>Medicina</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Nome Completo</Text>
-            <TextInput 
-              style={styles.input} 
-              value={nome} 
-              onChangeText={setNome} 
-              placeholder="Digite seu nome"
-            />
+            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Nome Completo" placeholderTextColor="#888" />
+            <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="E-mail institucional" placeholderTextColor="#888" />
+            <TextInput style={styles.input} value={conselho} onChangeText={setConselho} placeholder={cargo === 'Medico' ? "Nº do CRM" : "Nº do COREN"} placeholderTextColor="#888" />
+            <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="Crie uma senha" placeholderTextColor="#888" />
 
-            <Text style={styles.label}>E-mail Institucional</Text>
-            <TextInput 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail} 
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder="seuemail@ubs.gov.br"
-            />
-
-            <Text style={styles.label}>Número do Registro (AL)</Text>
-            <TextInput 
-              style={styles.input} 
-              value={conselho} 
-              onChangeText={setConselho} 
-              placeholder={cargo === 'Medico' ? "CRM: 12345" : "COREN: 12345"}
-            />
-
-            <Text style={styles.label}>Defina uma Senha</Text>
-            <TextInput 
-              style={styles.input} 
-              value={senha} 
-              onChangeText={setSenha} 
-              secureTextEntry 
-              placeholder="••••••••"
-            />
-
-            <TouchableOpacity 
-              style={[
-                styles.btnSignup, 
-                cargo === 'Medico' ? styles.bgBlue : styles.bgGreen
-              ]} 
-              onPress={handleSignup}
-            >
-              <Text style={styles.btnText}>SOLICITAR ACESSO</Text>
+            <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
+              <Text style={styles.signupButtonText}>SOLICITAR ACESSO</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <LibrasFAB />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa' },
-  scroll: { padding: 20 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 15, elevation: 3 },
-  infoText: { fontSize: 13, color: '#666', marginBottom: 20, textAlign: 'center', lineHeight: 18 },
-  label: { fontSize: 12, fontWeight: 'bold', color: '#444', marginBottom: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  chip: { 
-    flex: 0.48, 
-    paddingVertical: 12, 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9'
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F0F4F8' 
   },
-  chipEnfermeiroActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-  chipMedicoActive: { backgroundColor: '#2196F3', borderColor: '#2196F3' },
-  chipText: { fontSize: 11, fontWeight: 'bold', color: '#666' },
-  textWhite: { color: '#fff' },
-  input: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 12, marginBottom: 15, borderWidth: 1, borderColor: '#eee' },
-  btnSignup: { padding: 18, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  bgGreen: { backgroundColor: '#4CAF50' },
-  bgBlue: { backgroundColor: '#2196F3' },
-  btnText: { color: '#fff', fontWeight: 'bold' }
+  scroll: { 
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 25,
+    paddingBottom: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
+  },
+  headerContainer: { 
+    alignItems: 'center', 
+    marginBottom: 30,
+    marginTop: 80,
+  },
+  headerTitle: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    color: '#2C3E50' 
+  },
+  headerSubtitle: { 
+    fontSize: 16, 
+    color: '#7F8C8D', 
+    marginTop: 8,
+    textAlign: 'center'
+  },
+  form: {
+    width: '100%',
+  },
+  label: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#5D6D7E', 
+    marginBottom: 10,
+    marginLeft: 5,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#BDC3C7',
+  },
+  chipActive: {
+    backgroundColor: '#3498DB',
+    borderColor: '#3498DB',
+  },
+  chipText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#34495E',
+  },
+  chipTextActive: {
+    color: '#fff',
+  },
+  input: { 
+    backgroundColor: '#fff', 
+    borderRadius: 12, 
+    padding: 16, 
+    marginBottom: 15, 
+    borderWidth: 1, 
+    borderColor: '#E5E7E9',
+    fontSize: 16,
+    color: '#333',
+  },
+  signupButton: { 
+    backgroundColor: '#2ECC71', 
+    paddingVertical: 18, 
+    borderRadius: 12, 
+    alignItems: 'center', 
+    marginTop: 10,
+    elevation: 3,
+    shadowColor: '#2ECC71',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { height: 4, width: 0 },
+  },
+  signupButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  }
 });

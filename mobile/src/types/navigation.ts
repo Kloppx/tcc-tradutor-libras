@@ -1,25 +1,46 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-// Lista das telas e o que elas recebem de parâmetro (undefined = nada)
+export type PacienteTriagem = {
+  id?: string;
+  nome: string;
+  idade?: number;
+  senha?: string;
+  risco?: 'Vermelho' | 'Amarelo' | 'Verde';
+  especialidade?: string;
+  triagem?: {
+    pa?: string;
+    temp?: string;
+    spo2?: string;
+    peso?: string;
+    queixa?: string;
+  };
+};
+
+// Lista das telas e o que elas recebem de parametro (undefined = nada)
 export type RootStackParamList = {
-  Login: undefined;
-  PacienteFlow: undefined; // Esse é o grupo de abas (Home, Sobre, UBS)
-  Anamnese: undefined;
-  BodySelection: { peso: string, altura: string }; 
-  Sintomas: { region: string, peso: string, altura: string };
-  RealTimeTranslation: undefined;
-  Resumo: { peso: string, altura: string, sintomas: string[], region: string };
-  ProfissionalHome: undefined;
-  TriagemAvancada: undefined;
-  Recepcao: undefined;
   SelectionProfile: undefined;
-  ProntuarioMedico: undefined;
-  EnfermagemDashboard: undefined;
-  ProcedimentosEnfermagem: undefined;
+  Login: undefined;
   ProfissionalSignup: undefined;
-  MedicoDashboard: undefined;
+  Main: undefined;
+
+  Recepcao: undefined;
+  Anamnese: undefined;
   PacienteCadastro: undefined;
   PacienteEspera: { pacienteNome: string };
+  BodySelection: { peso: string; altura: string };
+  Sintomas: { region: string; peso: string; altura: string };
+  Resumo: { peso: string; altura: string; sintomas: string[]; region: string };
+
+  EnfermagemDashboard: undefined;
+  TriagemAvancada: { paciente?: PacienteTriagem } | undefined;
+  ProcedimentosEnfermagem: undefined;
+
+  MedicoDashboard: undefined;
+  ProntuarioMedico: { paciente: PacienteTriagem };
+
+  RealTimeTranslation: undefined;
+  Profissional: undefined;
+  Home: undefined;
 };
 
 // Helper para usar nas telas

@@ -27,7 +27,7 @@ export const LibrasFAB = () => {
       accessibilityLabel="Ativar tradução em Libras"
       accessibilityHint="Abre a tela de tradução em tempo real para comunicação com o paciente"
     >
-      <Ionicons name="hand-point-up-outline" size={30} color="#fff" importantForAccessibility="no" />
+      <Ionicons name="hand-left-outline" size={30} color="#fff" importantForAccessibility="no" />
       <Text style={styles.fabText} allowFontScaling={false}>LIBRAS</Text>
     </TouchableOpacity>
   );

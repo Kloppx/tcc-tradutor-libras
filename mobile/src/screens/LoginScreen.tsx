@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, TextInput, 
-  KeyboardAvoidingView, Platform, ScrollView 
+  KeyboardAvoidingView, Platform, ScrollView, StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 
-// SIMULAÇÃO DE BANCO DE DATOS (BI Context)
+// SIMULAÇÃO DE BANCO DE DADOS
 const USERS_MOCK = [
   { email: 'medico@ubs.com', senha: '123', cargo: 'Medico', nome: 'Dr. Roberto' },
   { email: 'enfermeiro@ubs.com', senha: '123', cargo: 'Enfermeiro', nome: 'Enf. Márcia' }
@@ -25,7 +26,7 @@ export default function LoginScreen() {
       Toast.show({
         type: 'error',
         text1: 'Campos Vazios',
-        text2: 'Por favor, insira suas credenciais profissionais.'
+        text2: 'Por favor, insira seu e-mail e senha.'
       });
       return;
     }
@@ -37,21 +38,20 @@ export default function LoginScreen() {
     if (usuarioEncontrado) {
       Toast.show({
         type: 'success',
-        text1: `Olá, ${usuarioEncontrado.nome}! 👋`,
-        text2: `Acesso liberado como ${usuarioEncontrado.cargo}.`
+        text1: `Bem-vindo(a), ${usuarioEncontrado.nome}!`,
+        text2: 'Acesso liberado.'
       });
 
-      // --- LOGICA DE DIRECIONAMENTO ATUALIZADA ---
       if (usuarioEncontrado.cargo === 'Medico') {
-        navigation.navigate('MedicoDashboard'); // Agora vai direto para a fila do médico
+        navigation.replace('MedicoDashboard');
       } else {
-        navigation.navigate('EnfermagemDashboard'); 
+        navigation.replace('EnfermagemDashboard'); 
       }
     } else {
       Toast.show({
         type: 'error',
         text1: 'Acesso Negado',
-        text2: 'E-mail ou senha incorretos.'
+        text2: 'Credenciais inválidas. Tente novamente.'
       });
     }
   };
@@ -61,53 +61,48 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       style={styles.container}
     >
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>INTERPRETARTE</Text>
-          <Text style={styles.tagline}>Acessibilidade que salva vidas</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back-outline" size={28} color="#333" />
+        </TouchableOpacity>
+
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Acesso Profissional</Text>
+          <Text style={styles.headerSubtitle}>Faça login para gerenciar pacientes e atendimentos.</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Acesso ao Paciente</Text>
-          <TouchableOpacity 
-            style={styles.btnPaciente} 
-            onPress={() => navigation.navigate('Recepcao')}
-          >
-            <Text style={styles.btnText}>SOU PACIENTE (GERAR SENHA)</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.orText}>OU</Text>
-          <View style={styles.line} />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Acesso Restrito Profissional</Text>
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <Ionicons name="mail-outline" size={22} color="#888" style={styles.inputIcon} />
+            <TextInput 
+              style={styles.input} 
+              placeholder="E-mail profissional" 
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor="#888"
+            />
+          </View>
           
-          <TextInput 
-            style={styles.input} 
-            placeholder="E-mail profissional" 
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          
-          <TextInput 
-            style={styles.input} 
-            placeholder="Senha" 
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry 
-          />
+          <View style={styles.inputGroup}>
+            <Ionicons name="lock-closed-outline" size={22} color="#888" style={styles.inputIcon} />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Senha" 
+              value={senha}
+              onChangeText={setSenha}
+              secureTextEntry 
+              placeholderTextColor="#888"
+            />
+          </View>
 
           <TouchableOpacity 
-            style={styles.btnProfissional} 
+            style={styles.loginButton} 
             onPress={handleLoginProfissional}
           >
-            <Text style={styles.btnText}>ENTRAR NO SISTEMA</Text>
+            <Text style={styles.loginButtonText}>ENTRAR</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -115,7 +110,7 @@ export default function LoginScreen() {
             onPress={() => navigation.navigate('ProfissionalSignup')}
           >
             <Text style={styles.signupText}>
-              Primeiro acesso? <Text style={styles.boldText}>Solicite cadastro aqui.</Text>
+              Não tem uma conta? <Text style={styles.signupLinkText}>Cadastre-se</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -124,23 +119,88 @@ export default function LoginScreen() {
   );
 }
 
-// ... (Mantenha os estilos que você já tem, eles estão ótimos)
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  scrollContent: { padding: 30, justifyContent: 'center', flexGrow: 1 },
-  logoContainer: { alignItems: 'center', marginBottom: 50 },
-  logoText: { fontSize: 32, fontWeight: 'bold', color: '#2196F3' },
-  tagline: { fontSize: 16, color: '#666', marginTop: 5 },
-  section: { width: '100%', marginBottom: 15 },
-  sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#aaa', marginBottom: 10, textAlign: 'center', textTransform: 'uppercase' },
-  input: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: '#eee', color: '#333' },
-  btnPaciente: { backgroundColor: '#2196F3', paddingVertical: 18, borderRadius: 12, alignItems: 'center', elevation: 3 },
-  btnProfissional: { backgroundColor: '#4CAF50', paddingVertical: 18, borderRadius: 12, alignItems: 'center', elevation: 3 },
-  btnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
-  line: { flex: 1, height: 1, backgroundColor: '#eee' },
-  orText: { marginHorizontal: 15, color: '#ccc', fontWeight: 'bold', fontSize: 12 },
-  signupLink: { marginTop: 20, alignItems: 'center' },
-  signupText: { color: '#888', fontSize: 13 },
-  boldText: { color: '#4CAF50', fontWeight: 'bold' }
+  container: { 
+    flex: 1, 
+    backgroundColor: '#fff' 
+  },
+  scrollContent: { 
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 25,
+    paddingBottom: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
+  },
+  headerContainer: { 
+    alignItems: 'center', 
+    marginBottom: 40,
+    marginTop: 80, // Espaço para o botão de voltar
+  },
+  headerTitle: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    color: '#2C3E50' 
+  },
+  headerSubtitle: { 
+    fontSize: 16, 
+    color: '#7F8C8D', 
+    marginTop: 8,
+    textAlign: 'center'
+  },
+  form: {
+    width: '100%',
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#E5E7E9',
+  },
+  inputIcon: {
+    paddingLeft: 15,
+  },
+  input: { 
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  loginButton: { 
+    backgroundColor: '#3498DB', 
+    paddingVertical: 18, 
+    borderRadius: 12, 
+    alignItems: 'center', 
+    marginTop: 10,
+    elevation: 3,
+    shadowColor: '#3498DB',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { height: 4, width: 0 },
+  },
+  loginButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  signupLink: { 
+    marginTop: 25, 
+    alignItems: 'center' 
+  },
+  signupText: { 
+    color: '#7F8C8D', 
+    fontSize: 14 
+  },
+  signupLinkText: { 
+    color: '#3498DB', 
+    fontWeight: 'bold' 
+  }
 });

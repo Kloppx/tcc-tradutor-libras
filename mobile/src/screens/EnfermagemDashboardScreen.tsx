@@ -1,96 +1,149 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Dimensions } from 'react-native';
-import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Dimensions, StatusBar } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit'; 
 import Toast from 'react-native-toast-message';
+import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
+import { LibrasFAB } from '../components/GlobalComponents';
 
 const screenWidth = Dimensions.get("window").width;
 
-const FILA_RECEPCAO = [
-  { id: '1', nome: 'Ana Paula Souza', idade: '22 anos', senha: 'S-45' },
-  { id: '2', nome: 'Ricardo Alencar', idade: '45 anos', senha: 'S-46' },
-  { id: '3', nome: 'Beatriz Lins', idade: '31 anos', senha: 'S-47' },
+// DADOS MOCKADOS PARA A FILA DE PACIENTES
+const DADOS_FILA: PacienteTriagem[] = [
+  {
+    id: '1',
+    nome: 'Ana Paula Souza',
+    idade: 22,
+    senha: 'N-45',
+    risco: 'Verde',
+    triagem: { pa: '118/76', temp: '36.4', spo2: '98', peso: '62', queixa: 'Dor de garganta' },
+  },
+  {
+    id: '2',
+    nome: 'Ricardo Alencar',
+    idade: 45,
+    senha: 'N-46',
+    risco: 'Amarelo',
+    triagem: { pa: '142/92', temp: '37.1', spo2: '96', peso: '84', queixa: 'Dor no peito leve' },
+  },
+  {
+    id: '3',
+    nome: 'Beatriz Lins',
+    idade: 31,
+    senha: 'N-47',
+    risco: 'Verde',
+    triagem: { pa: '120/80', temp: '36.8', spo2: '99', peso: '68', queixa: 'Cefaleia' },
+  },
+  {
+    id: '4',
+    nome: 'Carlos Andrade',
+    idade: 56,
+    senha: 'N-48',
+    risco: 'Amarelo',
+    triagem: { pa: '150/95', temp: '37.3', spo2: '95', peso: '90', queixa: 'Tontura' },
+  },
 ];
 
-export default function EnfermagemDashboardScreen({ navigation }: any) {
+// DADOS MOCKADOS PARA O GRÁFICO DE FLUXO
+const DADOS_GRAFICO = {
+  labels: ["08h", "10h", "12h", "14h", "16h", "18h"],
+  datasets: [{ data: [4, 15, 10, 25, 18, 12] }]
+};
+
+const HORA_CHEGADA: Record<string, string> = {
+  '1': '08:15',
+  '2': '08:18',
+  '3': '08:22',
+  '4': '08:25',
+};
+
+type Props = RootStackScreenProps<'EnfermagemDashboard'>;
+
+export default function EnfermagemDashboardScreen({ navigation }: Props) {
 
   const handleLogout = () => {
-    Alert.alert("Sair", "Encerrar sessão de Enfermagem?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Sair", onPress: () => {
-          Toast.show({ type: 'info', text1: 'Sessão encerrada', text2: 'Bom descanso!' });
-          navigation.replace('Login'); 
-      }, style: "destructive" }
-    ]);
+    Alert.alert(
+      "Encerrar Sessão", 
+      "Tem certeza que deseja sair do painel de enfermagem?", 
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sair", onPress: () => {
+            Toast.show({ type: 'info', text1: 'Sessão encerrada com segurança.' });
+            navigation.replace('Login'); 
+        }, style: "destructive" }
+      ]
+    );
   };
 
-  const renderPaciente = ({ item }: { item: typeof FILA_RECEPCAO[0] }) => (
-    <View style={styles.patientCard}>
+  const renderItem = ({ item }: { item: PacienteTriagem }) => (
+    <TouchableOpacity 
+      style={styles.patientCard}
+      onPress={() => navigation.navigate('TriagemAvancada', { paciente: item })}
+      accessible={true}
+      accessibilityLabel={`Paciente ${item.nome}, ${item.idade} anos. Toque para iniciar triagem.`}
+    >
+      <View style={styles.patientIcon}>
+        <Ionicons name="person-outline" size={30} color="#3498DB" />
+      </View>
       <View style={styles.patientInfo}>
         <Text style={styles.patientName}>{item.nome}</Text>
-        <Text style={styles.patientSub}>{item.idade} • Senha: {item.senha}</Text>
+        <Text style={styles.patientDetails}>
+          {item.idade ?? '--'} anos • Senha: {item.senha ?? '--'} • Chegada: {HORA_CHEGADA[item.id || ''] ?? '--'}
+        </Text>
       </View>
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.miniBtn, { backgroundColor: '#4CAF50' }]} 
-          onPress={() => navigation.navigate('TriagemAvancada')}
-        >
-          <Ionicons name="clipboard-outline" size={14} color="#fff" />
-          <Text style={styles.miniBtnText}>TRIAGEM</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.miniBtn, { backgroundColor: '#2196F3' }]} 
-          onPress={() => navigation.navigate('ProcedimentosEnfermagem')}
-        >
-          <Ionicons name="medkit-outline" size={14} color="#fff" />
-          <Text style={styles.miniBtnText}>PROCED.</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <Ionicons name="chevron-forward-outline" size={24} color="#BDC3C7" />
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* HEADER ROW ALINHADO */}
-      <View style={styles.headerRow}>
-        <HealthHeader title="Painel de Enfermagem" />
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={26} color="#ff5252" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Painel de Enfermagem</Text>
+          <Text style={styles.headerSubtitle}>Olá, Enf. Márcia! 👋</Text>
+        </View>
+        <TouchableOpacity onPress={handleLogout} accessibilityLabel="Sair da sua conta">
+          <Ionicons name="log-out-outline" size={30} color="#E74C3C" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.chartSection}>
-        <Text style={styles.sectionTitle}>Fluxo de Atendimentos (Hoje)</Text>
+      {/* Seção do Gráfico de BI */}
+      <View style={styles.chartContainer}>
+        <Text style={styles.sectionTitle}>Volume de Atendimentos por Hora</Text>
         <LineChart
-          data={{
-            labels: ["08h", "10h", "12h", "14h", "16h", "18h"],
-            datasets: [{ data: [4, 15, 10, 25, 18, 12] }]
-          }}
+          data={DADOS_GRAFICO}
           width={screenWidth - 40}
-          height={160}
+          height={180}
+          yAxisLabel=""
+          yAxisSuffix=""
+          yAxisInterval={1}
           chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
+            backgroundColor: "#F0F4F8",
+            backgroundGradientFrom: "#F0F4F8",
+            backgroundGradientTo: "#F0F4F8",
             decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`, 
-            labelColor: (opacity = 1) => `rgba(100, 100, 100, ${opacity})`,
-            propsForDots: { r: "4", strokeWidth: "2", stroke: "#4CAF50" }
+            color: (opacity = 1) => `rgba(52, 152, 219, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(44, 62, 80, ${opacity})`,
+            style: { borderRadius: 16 },
+            propsForDots: { r: "5", strokeWidth: "2", stroke: "#3498DB" }
           }}
           bezier
           style={styles.chart}
         />
       </View>
 
-      <View style={{ flex: 1, paddingHorizontal: 20 }}>
-        <Text style={styles.sectionTitle}>Aguardando Triagem</Text>
+      {/* Seção da Lista de Pacientes (FlatList) */}
+      <View style={styles.listContainer}>
+        <Text style={styles.sectionTitle}>Fila de Espera para Triagem</Text>
         <FlatList
-          data={FILA_RECEPCAO}
-          keyExtractor={(item) => item.id}
-          renderItem={renderPaciente}
+          data={DADOS_FILA}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id || item.nome}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       </View>
 
@@ -100,43 +153,75 @@ export default function EnfermagemDashboardScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa' },
-  headerRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingTop: 50, 
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F0F4F8' 
   },
-  logoutBtn: { padding: 5 },
-  chartSection: { padding: 20, alignItems: 'center' },
-  chart: { borderRadius: 16, elevation: 2, backgroundColor: '#fff', paddingVertical: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 12 },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingTop: 60, 
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAECEE'
+  },
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#2C3E50' 
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#7F8C8D',
+    marginTop: 4,
+  },
+  chartContainer: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAECEE',
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: '#34495E', 
+    marginBottom: 15 
+  },
+  chart: { 
+    alignSelf: 'center',
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
   patientCard: { 
     backgroundColor: '#fff', 
     borderRadius: 12, 
     padding: 15, 
-    marginBottom: 10, 
-    elevation: 2, 
     flexDirection: 'row', 
-    alignItems: 'center' 
+    alignItems: 'center',
   },
-  patientInfo: { flex: 1 },
-  patientName: { fontSize: 15, fontWeight: 'bold', color: '#444' },
-  patientSub: { fontSize: 12, color: '#888' },
-  actionButtons: { gap: 6 },
-  miniBtn: { 
-    flexDirection: 'row', 
-    paddingVertical: 6, 
-    paddingHorizontal: 10, 
-    borderRadius: 6, 
-    alignItems: 'center', 
-    minWidth: 90,
-    justifyContent: 'center'
+  patientIcon: {
+    marginRight: 15,
   },
-  miniBtnText: { color: '#fff', fontSize: 10, fontWeight: 'bold', marginLeft: 4 }
+  patientInfo: { 
+    flex: 1 
+  },
+  patientName: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#2C3E50' 
+  },
+  patientDetails: { 
+    fontSize: 14, 
+    color: '#7F8C8D',
+    marginTop: 4,
+  },
+  separator: {
+    height: 10,
+  },
 });
