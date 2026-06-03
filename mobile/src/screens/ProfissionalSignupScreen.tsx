@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
+import { registerProfessional } from '../services/api';
 
 export default function ProfissionalSignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -17,8 +18,9 @@ export default function ProfissionalSignupScreen() {
   const [conselho, setConselho] = useState('');
   const [senha, setSenha] = useState('');
   const [cargo, setCargo] = useState<'Enfermeiro' | 'Medico' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!nome || !email || !conselho || !senha || !cargo) {
       Toast.show({
         type: 'error',
@@ -28,13 +30,32 @@ export default function ProfissionalSignupScreen() {
       return;
     }
 
-    Toast.show({
-      type: 'success',
-      text1: 'Solicitação Enviada!',
-      text2: `Aguarde a validação do seu ${cargo === 'Medico' ? 'CRM' : 'COREN'}.`
-    });
-    
-    navigation.navigate('Login');
+    setIsLoading(true);
+    try {
+      await registerProfessional({
+        name: nome,
+        email,
+        password: senha,
+        role: cargo,
+        councilNumber: conselho,
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Solicitação Enviada!',
+        text2: `Aguarde a validação do seu ${cargo === 'Medico' ? 'CRM' : 'COREN'}.`
+      });
+
+      navigation.navigate('Login');
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha no cadastro',
+        text2: error instanceof Error ? error.message : 'Não foi possível cadastrar o profissional.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -79,8 +100,8 @@ export default function ProfissionalSignupScreen() {
             <TextInput style={styles.input} value={conselho} onChangeText={setConselho} placeholder={cargo === 'Medico' ? "Nº do CRM" : "Nº do COREN"} placeholderTextColor="#888" />
             <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="Crie uma senha" placeholderTextColor="#888" />
 
-            <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-              <Text style={styles.signupButtonText}>SOLICITAR ACESSO</Text>
+            <TouchableOpacity style={styles.signupButton} onPress={handleSignup} disabled={isLoading}>
+              <Text style={styles.signupButtonText}>{isLoading ? 'ENVIANDO...' : 'SOLICITAR ACESSO'}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

@@ -1,0 +1,254 @@
+2ª AVALIACAO - UX
+Projeto: Interpretarte (Aplicativo de Acessibilidade em Saude)
+Curso: Sistemas de Informacao
+
+1. CONTEXTO DO PROJETO
+O Interpretarte e um aplicativo mobile voltado para atendimento em UBS, com foco em acessibilidade para pacientes surdos e suporte operacional para equipes de recepcao, enfermagem e medicina.
+
+Objetivo de UX:
+- Reduzir barreiras de comunicacao no atendimento.
+- Tornar o fluxo de triagem mais rapido e compreensivel.
+- Diminuir erros operacionais em momentos de alta demanda.
+
+Problema central:
+- Dificuldade de comunicacao entre paciente surdo e equipe clinica.
+- Tempo de atendimento elevado por falhas de fluxo.
+- Interfaces de saude geralmente tecnicas e pouco intuitivas para pacientes.
+
+2. DEFINICAO DE PERSONAS
+
+2.1 Persona primaria (Paciente)
+Nome: Ana Paula Souza
+Idade: 28 anos
+Perfil: Paciente surda usuaria de Libras, ensino medio completo.
+Contexto: Procura atendimento em UBS com queixa aguda e precisa ser compreendida rapidamente.
+Objetivos:
+- Ser atendida sem dependencia de acompanhante.
+- Informar sintomas com clareza.
+- Entender orientacoes clinicas.
+Dores:
+- Falta de profissionais que dominem Libras.
+- Ansiedade em ambiente de espera.
+- Medo de ser mal compreendida na triagem.
+Necessidades de UX:
+- Linguagem simples.
+- Indicacoes visuais fortes.
+- Confirmacoes claras de acao.
+
+2.2 Persona secundaria (Enfermagem)
+Nome: Marcia Lima
+Idade: 39 anos
+Perfil: Enfermeira de UBS com alta carga de atendimento.
+Contexto: Faz triagem rapida e precisa priorizar pacientes por risco.
+Objetivos:
+- Registrar dados sem retrabalho.
+- Identificar risco clinico de forma objetiva.
+- Encaminhar com agilidade ao medico.
+Dores:
+- Filas e interrupcoes frequentes.
+- Formularios extensos e pouco organizados.
+- Falta de padronizacao na coleta de sinais vitais.
+Necessidades de UX:
+- Tela enxuta com agrupamento por blocos.
+- Campos essenciais primeiro.
+- Feedback imediato de salvamento.
+
+2.3 Persona terciaria (Medico)
+Nome: Roberto Nunes
+Idade: 45 anos
+Perfil: Medico generalista da UBS.
+Contexto: Recebe paciente triado e precisa decidir conduta rapidamente.
+Objetivos:
+- Visualizar triagem resumida sem navegar em excesso.
+- Registrar anamnese e conduta de forma objetiva.
+- Encerrar atendimento com rastreabilidade.
+Dores:
+- Informacoes dispersas em multiplas telas.
+- Falta de prioridade visual para casos criticos.
+Necessidades de UX:
+- Lista priorizada por risco.
+- Resumo clinico em destaque.
+- Navegacao curta ate prontuario.
+
+3. JORNADA DO USUARIO
+
+3.1 Jornada da persona primaria (Paciente)
+Etapa 1 - Entrada no app
+- Acao: Seleciona "Sou Paciente".
+- Emocao: Curiosidade e leve inseguranca.
+- Oportunidade UX: Mensagens acolhedoras e orientacao objetiva.
+
+Etapa 2 - Recepcao / Autoatendimento
+- Acao: Escolhe entre primeiro atendimento, ja cadastrado ou anamnese guiada.
+- Emocao: Mais confiante ao ver opcoes claras.
+- Oportunidade UX: Cartoes grandes, contraste e icones sem ambiguidades.
+
+Etapa 3 - Cadastro / Anamnese
+- Acao: Preenche dados e informa queixa principal.
+- Emocao: Concentracao, possivel ansiedade.
+- Oportunidade UX: Validacoes em tempo real, mascara de campos e textos curtos.
+
+Etapa 4 - Espera e chamado
+- Acao: Acompanha senha e status de chamado.
+- Emocao: Expectativa.
+- Oportunidade UX: Alertas visuais acessiveis (cor + icone + texto).
+
+Etapa 5 - Traducao em Libras
+- Acao: Usa tradutor em tempo real durante comunicacao.
+- Emocao: Alivio ao ser compreendida.
+- Oportunidade UX: Estado de conexao explicito (online/offline), erro amigavel e orientacao de recuperacao.
+
+3.2 Jornada da enfermagem
+Etapa 1 - Login profissional
+- Acao: Entra no painel.
+- Oportunidade UX: fluxo sem friccao e direcionamento por perfil.
+
+Etapa 2 - Fila de triagem
+- Acao: Seleciona paciente.
+- Oportunidade UX: lista com FlatList e informacao clinica minima no card.
+
+Etapa 3 - Triagem avancada
+- Acao: Coleta sinais vitais e condicoes clinicas.
+- Oportunidade UX: agrupamento por cards (sinais vitais, condicoes, alertas), CTA unico de salvamento.
+
+Etapa 4 - Encaminhamento
+- Acao: Retorna ao painel com triagem concluida.
+- Oportunidade UX: feedback por toast e consistencia de navegacao.
+
+3.3 Jornada do medico
+Etapa 1 - Dashboard medico
+- Acao: Visualiza fila priorizada por risco.
+- Oportunidade UX: hierarquia visual para vermelho/amarelo/verde.
+
+Etapa 2 - Prontuario
+- Acao: Le resumo da triagem, registra evolucao e conduta.
+- Oportunidade UX: manter contexto clinico fixo no topo e formulario simplificado.
+
+3.4 Jornadas selecionadas para representacao visual (com imagens)
+Para atender ao criterio da avaliacao, foram escolhidas 2 jornadas com maior relevancia de UX:
+
+Jornada A (Paciente - Autoatendimento e Comunicacao)
+- Motivo da escolha: representa acessibilidade, clareza de fluxo e reducao de ansiedade.
+- Fluxo visual sugerido para imagem:
+  1) SelectionProfile (Sou Paciente)
+  2) Recepcao (opcoes de atendimento)
+  3) PacienteCadastro ou Anamnese
+  4) PacienteEspera
+  5) RealTimeTranslation (Libras)
+
+Jornada B (Profissional - Enfermagem ate decisao clinica)
+- Motivo da escolha: representa eficiencia operacional e seguranca na triagem.
+- Fluxo visual sugerido para imagem:
+  1) SelectionProfile (Sou Profissional)
+  2) Login
+  3) EnfermagemDashboard (fila)
+  4) TriagemAvancada
+  5) Encaminhamento para MedicoDashboard / ProntuarioMedico
+
+4. FLUXO DE NAVEGACAO (PROTOTIPO MEDIA/ALTA FIDELIDADE)
+
+4.1 Mapa de navegacao principal
+SelectionProfile
+ -> Sou Paciente
+   -> Recepcao
+      -> PacienteCadastro -> PacienteEspera
+      -> Anamnese -> BodySelection -> Sintomas -> Resumo
+      -> Ja cadastrado (CPF/SUS) -> PacienteEspera
+ -> Sou Profissional
+   -> Login
+      -> EnfermagemDashboard -> TriagemAvancada -> (retorna dashboard)
+      -> MedicoDashboard -> ProntuarioMedico -> (retorna dashboard)
+ -> Modo Demonstracao
+   -> Main (Tabs)
+      -> Inicio
+      -> Tradutor (camera + websocket)
+      -> Recursos (GPS + rede/Wi-Fi)
+      -> Profissional
+
+4.2 Justificativa do nivel de fidelidade
+- Media fidelidade: estrutura, hierarquia e disposicao dos componentes foram validadas (cards, listas, formularios por bloco).
+- Alta fidelidade: telas principais possuem identidade visual consistente (cores de contexto clinico, tipografia legivel, botoes de acao destacada, feedback de status).
+
+5. DECISOES DE UX (COM JUSTIFICATIVA)
+
+5.1 Arquitetura da informacao por perfil
+Decisao: separar entrada por perfil (paciente x profissional).
+Motivo UX: reduz carga cognitiva e evita que usuario veja funcoes irrelevantes.
+
+5.2 Navegacao orientada a tarefa
+Decisao: caminhos curtos ate a tarefa principal (ex.: triagem, prontuario, senha).
+Motivo UX: em saude, rapidez e clareza sao mais importantes que exploracao livre.
+
+5.3 Hierarquia visual por risco clinico
+Decisao: uso de cores e rotulos para prioridades (vermelho, amarelo, verde).
+Motivo UX: facilita decisao rapida em contextos de urgencia.
+
+5.4 Feedback imediato
+Decisao: toasts de sucesso/erro em operacoes criticas.
+Motivo UX: confirma acao do usuario e reduz incerteza.
+
+5.5 Acessibilidade operacional
+Decisao: labels de acessibilidade, botoes grandes, contraste e FAB de Libras.
+Motivo UX: melhora uso por diferentes perfis e cenarios de estresse.
+
+5.6 Listagens performaticas
+Decisao: uso de FlatList nas filas e listas de sintomas.
+Motivo UX: responsividade consistente com maior volume de dados.
+
+5.7 Tratamento de erro amigavel no tradutor
+Decisao: nao expor dump tecnico de erro, apenas mensagem orientativa.
+Motivo UX: usuario final precisa de orientacao acionavel, nao de log tecnico.
+
+5.8 Recursos nativos alinhados ao contexto
+Decisao: camera (traducao), GPS (localizacao) e rede/Wi-Fi (estado de conectividade).
+Motivo UX: funcionalidade pratica para contexto real de atendimento e demonstracao academica.
+
+6. EVIDENCIAS DE IMPLEMENTACAO NO APP
+- Navegacao central: mobile/src/navigation/AppNavigator.tsx
+- Tipagem de rotas: mobile/src/types/navigation.ts
+- Triagem de enfermagem com lista: mobile/src/screens/EnfermagemDashboardScreen.tsx
+- Fila medica com lista: mobile/src/screens/MedicoDashboardScreen.tsx
+- Tradutor com camera e websocket: mobile/src/screens/RealTimeTranslationScreen.tsx
+- Recursos nativos (GPS + rede): mobile/src/screens/RecursosNativosScreen.tsx
+- Entrada por perfil: mobile/src/screens/SelectionProfileScreen.tsx
+
+7. CONCLUSAO
+As decisoes de design foram orientadas por UX para reduzir atrito, melhorar entendimento e acelerar o atendimento clinico, com foco em acessibilidade e operacao em ambiente real de UBS. A solucao equilibra simplicidade para paciente e eficiencia para equipe de saude, mantendo navegacao clara, feedback constante e uso de recursos nativos relevantes.
+
+8. ANEXO - CHECKLIST DE UX UTILIZADO
+- [x] Clareza de objetivo por tela
+- [x] Navegacao previsivel
+- [x] Estados de erro/sucesso visiveis
+- [x] Priorizacao visual de informacao clinica
+- [x] Acessibilidade minima em componentes interativos
+- [x] Performance de listas
+- [x] Consistencia de linguagem e rotulos
+
+9. ANEXOS VISUAIS (INSERIR IMAGENS)
+
+Imagem 1 - Jornada A (Paciente)
+Legenda sugerida: "Fluxo de experiencia do paciente, da entrada no app ao suporte de traducao em Libras."
+Onde inserir captura/prototipo:
+- [INSERIR IMAGEM 1 AQUI]
+Pontos de UX a destacar na explicacao da imagem:
+- Entrada por perfil reduz carga cognitiva.
+- Cartoes de acao facilitam escolha rapida.
+- Tela de espera melhora previsibilidade do atendimento.
+- Tradutor em tempo real aumenta acessibilidade comunicacional.
+
+Imagem 2 - Jornada B (Profissional)
+Legenda sugerida: "Fluxo operacional da enfermagem com foco em triagem segura e encaminhamento clinico."
+Onde inserir captura/prototipo:
+- [INSERIR IMAGEM 2 AQUI]
+Pontos de UX a destacar na explicacao da imagem:
+- Lista de fila com priorizacao visual por risco.
+- Triagem em blocos reduz erros de preenchimento.
+- Feedback de salvamento melhora confianca do profissional.
+- Encaminhamento para prontuario reduz retrabalho.
+
+10. ORIENTACAO RAPIDA PARA MONTAGEM DAS IMAGENS NO DOC
+Passo 1: usar capturas de tela do app (ou prototipo no Figma) em sequencia.
+Passo 2: para cada jornada, montar uma prancha unica com 4 a 6 telas.
+Passo 3: incluir setas entre telas indicando a navegacao.
+Passo 4: inserir a legenda e os 4 pontos de UX logo abaixo de cada imagem.
+Passo 5: manter padrao visual (mesma largura, fonte e espacamento) para as 2 imagens.

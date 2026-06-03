@@ -1,36 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
-// --- CONFIGURAÇÃO ---
-// Prioriza variável de ambiente (EXPO_PUBLIC_WS_URL).
-// Fallback para desenvolvimento local quando a variável não estiver definida.
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.10.71:8000/ws/predict';
+const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.10.73:8000/ws/predict';
 
 export default function RealTimeTranslationScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isConnected, setIsConnected] = useState(false);
-  const [translation, setTranslation] = useState("Aguardando sinal...");
+  const [translation, setTranslation] = useState('Aguardando sinal...');
   const [confidence, setConfidence] = useState(0);
-  
+
   const cameraRef = useRef<CameraView>(null);
   const ws = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const serverLabel = WS_URL.replace(/^wss?:\/\//, '').replace(/\/ws\/predict$/, '');
 
   const connectWebSocket = () => {
     try {
       ws.current = new WebSocket(WS_URL);
 
       ws.current.onopen = () => {
-        console.log("🟢 Conectado ao Servidor Python!");
+        console.log('🟢 Conectado ao Servidor Python!');
         setIsConnected(true);
-        startStreaming(); // Começa a enviar imagens
+        startStreaming();
       };
 
       ws.current.onmessage = (e) => {
-        // Recebe a resposta do Python
         const data = JSON.parse(e.data);
         if (data.status === 'predicted') {
           setTranslation(data.word);
@@ -38,43 +35,40 @@ export default function RealTimeTranslationScreen() {
         }
       };
 
-      ws.current.onerror = (e) => {
+      ws.current.onerror = () => {
         console.log('WebSocket error: falha ao conectar no servidor de tradução.');
         setIsConnected(false);
-        setTranslation('Servidor de tradução indisponível');
+        setTranslation('Servidor indisponível');
         setConfidence(0);
         Toast.show({
           type: 'error',
           text1: 'Falha na conexão',
-          text2: 'Verifique se o servidor Python está ativo e acessível na rede.',
+          text2: `Verifique se o servidor Python está ativo em ${serverLabel}.`,
         });
       };
 
       ws.current.onclose = () => {
-        console.log("🔴 Desconectado");
+        console.log('🔴 Desconectado');
         setIsConnected(false);
         setTranslation('Aguardando conexão com o servidor...');
         setConfidence(0);
         stopStreaming();
       };
     } catch (error) {
-      console.log("Erro de conexão:", error);
+      console.log('Erro de conexão:', error);
     }
   };
 
-  // 3. Loop de Envio de Imagens (O "Streaming")
   const startStreaming = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    // Envia um frame a cada 200ms (5 FPS) - Ajuste conforme necessário
     intervalRef.current = setInterval(async () => {
       if (cameraRef.current && ws.current?.readyState === WebSocket.OPEN) {
         try {
-          // Tira uma foto em baixa qualidade (para ser rápido) e Base64
           const photo = await cameraRef.current.takePictureAsync({
-            quality: 0.3, // 0.3 é suficiente para o MediaPipe
+            quality: 0.3,
             base64: true,
-            skipProcessing: true, // Pula o processamento do Android (HDR, etc) para ser mais rápido
+            skipProcessing: true,
             shutterSound: false,
           });
 
@@ -82,10 +76,10 @@ export default function RealTimeTranslationScreen() {
             ws.current.send(photo.base64);
           }
         } catch (err) {
-          console.log("Erro ao capturar frame:", err);
+          console.log('Erro ao capturar frame:', err);
         }
       }
-    }, 200); // 200ms = 5 frames por segundo (Bom equilíbrio para TCC)
+    }, 200);
   };
 
   const stopStreaming = () => {
@@ -97,7 +91,13 @@ export default function RealTimeTranslationScreen() {
     ws.current?.close();
   };
 
-  // Mantem a ordem dos hooks estavel e conecta somente quando a camera estiver liberada.
+  const reconnect = () => {
+    stopTranslation();
+    setTranslation('Reconectando...');
+    setConfidence(0);
+    connectWebSocket();
+  };
+
   useEffect(() => {
     if (!permission?.granted) return;
 
@@ -107,12 +107,13 @@ export default function RealTimeTranslationScreen() {
     };
   }, [permission?.granted]);
 
-  // 1. Gerenciar Permissão da Câmera
   if (!permission) return <View style={styles.container} />;
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={{textAlign:'center', marginBottom: 20}}>Precisamos da câmera para traduzir seus sinais.</Text>
+        <Text style={{ textAlign: 'center', marginBottom: 20 }}>
+          Precisamos da câmera para traduzir seus sinais.
+        </Text>
         <TouchableOpacity style={styles.btn} onPress={requestPermission}>
           <Text style={styles.btnText}>Permitir Câmera</Text>
         </TouchableOpacity>
@@ -122,28 +123,26 @@ export default function RealTimeTranslationScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Câmera em Tela Cheia */}
-      <CameraView 
-        style={StyleSheet.absoluteFill} 
-        facing="front" 
-        ref={cameraRef}
-      />
+      <CameraView style={StyleSheet.absoluteFill} facing="front" ref={cameraRef} />
 
-      {/* Camada de Interface (Overlay) */}
       <View style={styles.overlay}>
-        {/* Cabeçalho */}
         <View style={styles.header}>
           <View style={[styles.badge, { backgroundColor: isConnected ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeText}>{isConnected ? 'IA ONLINE' : 'OFFLINE'}</Text>
           </View>
         </View>
 
-        {/* Área de Tradução (Rodapé) */}
         <View style={styles.footer}>
           <Text style={styles.label}>Tradução em Tempo Real:</Text>
           <Text style={styles.translationText}>{translation}</Text>
           {confidence > 0 && (
             <Text style={styles.confidence}>Confiança: {(confidence * 100).toFixed(0)}%</Text>
+          )}
+          <Text style={styles.serverInfo}>Servidor: {serverLabel}</Text>
+          {!isConnected && (
+            <TouchableOpacity style={styles.retryBtn} onPress={reconnect}>
+              <Text style={styles.retryText}>Reconectar</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -162,6 +161,9 @@ const styles = StyleSheet.create({
   label: { color: '#ccc', marginBottom: 5 },
   translationText: { color: '#fff', fontSize: 32, fontWeight: 'bold', textAlign: 'center' },
   confidence: { color: '#4CAF50', marginTop: 5, fontSize: 12 },
+  serverInfo: { color: '#aaa', marginTop: 10, fontSize: 12, textAlign: 'center' },
+  retryBtn: { marginTop: 12, backgroundColor: '#2196F3', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  retryText: { color: 'white', fontWeight: 'bold' },
   btn: { backgroundColor: '#2196F3', padding: 15, borderRadius: 8 },
-  btnText: { color: 'white', fontWeight: 'bold' }
+  btnText: { color: 'white', fontWeight: 'bold' },
 });

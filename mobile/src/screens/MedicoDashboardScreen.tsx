@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
+import { listPatients } from '../services/api';
 
 type Props = RootStackScreenProps<'MedicoDashboard'>;
 
@@ -41,8 +42,25 @@ const RISK_PRIORITY: Record<NonNullable<PacienteTriagem['risco']>, number> = {
 };
 
 export default function MedicoDashboardScreen({ navigation }: Props) {
+  const [pacientes, setPacientes] = useState<PacienteTriagem[]>(PACIENTES_TRIADOS);
+
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const response = await listPatients('triaged');
+        if (response.patients.length > 0) {
+          setPacientes(response.patients as PacienteTriagem[]);
+        }
+      } catch {
+        setPacientes(PACIENTES_TRIADOS);
+      }
+    };
+
+    loadPatients();
+  }, []);
+
   const pacientesOrdenados = useMemo(() => {
-    return [...PACIENTES_TRIADOS].sort((a, b) => {
+    return [...pacientes].sort((a, b) => {
       const prioridadeA = RISK_PRIORITY[a.risco || 'Verde'];
       const prioridadeB = RISK_PRIORITY[b.risco || 'Verde'];
       if (prioridadeA !== prioridadeB) return prioridadeA - prioridadeB;
@@ -114,7 +132,7 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
         </View>
         <TouchableOpacity style={styles.callBtn} onPress={handleCallNext}>
           <Ionicons name="notifications-outline" size={20} color="#fff" />
-          <Text style={styles.callBtnText}>CHAMAR PRÓXIMO</Text>
+          <Text style={styles.callBtnText}>PRÓXIMO</Text>
         </TouchableOpacity>
       </View>
 
@@ -155,13 +173,13 @@ const styles = StyleSheet.create({
   callBtn: {
     backgroundColor: '#2196F3',
     flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: 'center',
     elevation: 2,
   },
-  callBtnText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 12 },
+  callBtnText: { color: '#fff', fontWeight: 'bold', marginLeft: 6, fontSize: 11 },
   card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 15, flexDirection: 'row', overflow: 'hidden', elevation: 3 },
   riscoBar: { width: 8 },
   cardContent: { flex: 1, padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

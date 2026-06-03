@@ -1,0 +1,6 @@
+true\pred,curar,doenca,dor,remedio,saude
+curar,5,4,0,1,0
+doenca,7,3,0,0,0
+dor,0,0,6,0,2
+remedio,2,1,0,9,0
+saude,0,0,1,0,7

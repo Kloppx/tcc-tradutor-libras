@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Dimensions, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { LineChart } from 'react-native-chart-kit';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import { listPatients } from '../services/api';
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -61,6 +62,22 @@ const HORA_CHEGADA: Record<string, string> = {
 type Props = RootStackScreenProps<'EnfermagemDashboard'>;
 
 export default function EnfermagemDashboardScreen({ navigation }: Props) {
+  const [pacientes, setPacientes] = useState<PacienteTriagem[]>(DADOS_FILA);
+
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const response = await listPatients('waiting');
+        if (response.patients.length > 0) {
+          setPacientes(response.patients as PacienteTriagem[]);
+        }
+      } catch {
+        setPacientes(DADOS_FILA);
+      }
+    };
+
+    loadPatients();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -138,7 +155,7 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
       <View style={styles.listContainer}>
         <Text style={styles.sectionTitle}>Fila de Espera para Triagem</Text>
         <FlatList
-          data={DADOS_FILA}
+          data={pacientes}
           renderItem={renderItem}
           keyExtractor={(item) => item.id || item.nome}
           showsVerticalScrollIndicator={false}

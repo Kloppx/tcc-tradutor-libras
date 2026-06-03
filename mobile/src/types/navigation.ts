@@ -7,6 +7,7 @@ export type PacienteTriagem = {
   senha?: string;
   risco?: 'Vermelho' | 'Amarelo' | 'Verde';
   especialidade?: string;
+  status?: string;
   triagem?: {
     pa?: string;
     temp?: string;
@@ -16,7 +17,6 @@ export type PacienteTriagem = {
   };
 };
 
-// Lista das telas e o que elas recebem de parametro (undefined = nada)
 export type RootStackParamList = {
   SelectionProfile: undefined;
   Login: undefined;
@@ -26,7 +26,7 @@ export type RootStackParamList = {
   Recepcao: undefined;
   Anamnese: undefined;
   PacienteCadastro: undefined;
-  PacienteEspera: { pacienteNome: string };
+  PacienteEspera: { pacienteNome: string; pacienteId?: string; senha?: string };
   BodySelection: { peso: string; altura: string };
   Sintomas: { region: string; peso: string; altura: string };
   Resumo: { peso: string; altura: string; sintomas: string[]; region: string };
@@ -43,6 +43,5 @@ export type RootStackParamList = {
   Home: undefined;
 };
 
-// Helper para usar nas telas
 export type RootStackScreenProps<T extends keyof RootStackParamList> = 
   NativeStackScreenProps<RootStackParamList, T>;

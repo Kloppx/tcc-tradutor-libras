@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, Image } from 'react-native';
 import { RootStackScreenProps } from '../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -10,37 +10,20 @@ type PainPoint = {
   name: string;
   x: number;
   y: number;
-  side: 'front' | 'back';
 };
 
 const PAIN_POINTS: PainPoint[] = [
-  { name: 'Cabeça', x: 50, y: 8, side: 'front' },
-  { name: 'Pescoço', x: 50, y: 15, side: 'front' },
-  { name: 'Ombro Esquerdo', x: 38, y: 20, side: 'front' },
-  { name: 'Ombro Direito', x: 62, y: 20, side: 'front' },
-  { name: 'Peito', x: 50, y: 28, side: 'front' },
-  { name: 'Abdomen', x: 50, y: 38, side: 'front' },
-  { name: 'Quadril', x: 50, y: 50, side: 'front' },
-  { name: 'Perna Esquerda', x: 44, y: 68, side: 'front' },
-  { name: 'Perna Direita', x: 56, y: 68, side: 'front' },
-  { name: 'Nuca', x: 50, y: 15, side: 'back' },
-  { name: 'Costas Superior', x: 50, y: 28, side: 'back' },
-  { name: 'Lombar', x: 50, y: 40, side: 'back' },
-  { name: 'Glúteo Esquerdo', x: 44, y: 52, side: 'back' },
-  { name: 'Glúteo Direito', x: 56, y: 52, side: 'back' },
-  { name: 'Panturrilha Esquerda', x: 44, y: 72, side: 'back' },
-  { name: 'Panturrilha Direita', x: 56, y: 72, side: 'back' },
+  { name: 'Cabeça', x: 50, y: 10 },
+  { name: 'Braço Esquerdo', x: 28, y: 28 },
+  { name: 'Braço Direito', x: 72, y: 28 },
+  { name: 'Tórax', x: 50, y: 30 },
+  { name: 'Perna Esquerda', x: 42, y: 70 },
+  { name: 'Perna Direita', x: 58, y: 70 },
 ];
 
 export default function BodySelectionScreen({ route, navigation }: Props) {
   const { peso, altura } = route.params;
   const [selected, setSelected] = useState<string[]>([]);
-  const [isBack, setIsBack] = useState(false);
-
-  const pointsOnCurrentSide = useMemo(
-    () => PAIN_POINTS.filter((p) => p.side === (isBack ? 'back' : 'front')),
-    [isBack]
-  );
 
   const togglePoint = (name: string) => {
     setSelected((prev) => (prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]));
@@ -64,25 +47,29 @@ export default function BodySelectionScreen({ route, navigation }: Props) {
           <Ionicons name="arrow-back-outline" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mapeamento de Dor</Text>
-        <TouchableOpacity onPress={() => setIsBack((v) => !v)} accessibilityLabel="Alternar frente e costas">
-          <Ionicons name="sync-outline" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={{ width: 26 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.patientBadge}>
           <Text style={styles.patientBadgeText}>Peso: {peso || '--'} kg</Text>
           <Text style={styles.patientBadgeText}>Altura: {altura || '--'} m</Text>
-          <Text style={styles.patientBadgeText}>Vista: {isBack ? 'Costas' : 'Frente'}</Text>
+          <Text style={styles.patientBadgeText}>Vista: Frente</Text>
         </View>
 
         <View style={styles.bodyCanvas}>
-          <View style={styles.bodyPlaceholder}>
-            <Ionicons name={isBack ? 'body-outline' : 'accessibility-outline'} size={120} color="#9FB3C8" />
-            <Text style={styles.bodyLabel}>{isBack ? 'VISTA COSTAS' : 'VISTA FRENTE'}</Text>
+          <Image
+            source={require('../../assets/body_silhouette.png')}
+            style={styles.bodyImage}
+            resizeMode="contain"
+            accessibilityLabel="Silhueta do corpo vista de frente"
+          />
+
+          <View style={styles.bodyLabelBadge} pointerEvents="none">
+            <Text style={styles.bodyLabel}>VISTA FRENTE</Text>
           </View>
 
-          {pointsOnCurrentSide.map((point) => {
+          {PAIN_POINTS.map((point) => {
             const active = selected.includes(point.name);
             return (
               <TouchableOpacity
@@ -149,12 +136,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     overflow: 'hidden',
   },
-  bodyPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  bodyImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.92,
   },
-  bodyLabel: { marginTop: 8, fontWeight: '700', color: '#5A7896' },
+  bodyLabelBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(28, 58, 89, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  bodyLabel: { fontWeight: '700', color: '#fff', fontSize: 12 },
   point: {
     position: 'absolute',
     width: 20,

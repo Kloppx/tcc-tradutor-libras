@@ -13,7 +13,7 @@ O projeto é dividido em dois núcleos principais que se comunicam para garantir
 
 
 1. **Client (Mobile)**: Desenvolvido em **React Native**, gerencia a recepção, triagem de enfermagem e o prontuário médico.
-2. **Brain (AI Engine)**: Desenvolvido em **Python**, utiliza visão computacional para processar frames de vídeo e extrair significados linguísticos.
+2. **Brain (AI Engine + API)**: Desenvolvido em **Python**, utiliza visão computacional para processar frames de vídeo e extrair significados linguísticos, além de expor a API REST usada pelo app para autenticação e CRUD de pacientes.
 
 ---
 
@@ -23,7 +23,7 @@ O motor de tradução atua como o núcleo de processamento do sistema:
 
 - **Visão Computacional**: Uso de `OpenCV` e `MediaPipe` para mapeamento de *landmarks* articulares das mãos e face.
 - **Processamento de Sequência**: Implementação de modelos [LSTM/Random Forest/MediaPipe Hands] para reconhecimento de gestos dinâmicos.
-- **Integração de Dados**: Backend estruturado em [FastAPI/Flask] para fornecer as predições ao aplicativo móvel com baixa latência.
+- **Integração de Dados**: Backend estruturado em [FastAPI] para fornecer predições em tempo real e também autenticação, cadastro, triagem e prontuário ao aplicativo móvel.
 
 ---
 
@@ -53,7 +53,7 @@ Como analista de BI, o projeto foi estruturado para gerar dados limpos e acioná
 | :--- | :--- |
 | **Mobile** | React Native, Expo, TypeScript, React Navigation |
 | **Inteligência Artificial** | Python, MediaPipe, OpenCV, Scikit-Learn |
-| **Integração/API** | FastAPI, WebSockets, ViaCEP API |
+| **Integração/API** | FastAPI, SQLite, WebSockets, ViaCEP API |
 | **DevOps/Deploy** | Git (PR Flow), EAS Update |
 
 ---
@@ -66,6 +66,19 @@ No diretório [mobile/.env.example](mobile/.env.example) existe um modelo para c
 2. Ajuste `EXPO_PUBLIC_WS_URL` para o ambiente de teste:
 	- Emulador Android: `ws://10.0.2.2:8000/ws/predict`
 	- Celular físico: `ws://SEU_IP_LOCAL:8000/ws/predict`
+
+3. Ajuste também `EXPO_PUBLIC_API_URL` para o mesmo host do backend HTTP:
+	- Emulador Android: `http://10.0.2.2:8000`
+	- Celular físico: `http://SEU_IP_LOCAL:8000`
+
+O backend expõe os principais endpoints em `/api`:
+
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/patients`
+- `POST /api/patients`
+- `PUT /api/patients/{id}/triage`
+- `PUT /api/patients/{id}/clinical-note`
 
 ---
 
