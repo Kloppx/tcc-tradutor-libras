@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import MaskInput from 'react-native-mask-input';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import { listPatients } from '../services/api';
 
 type Props = RootStackScreenProps<'Recepcao'>;
 
@@ -17,7 +18,7 @@ export default function RecepcaoScreen({ navigation }: Props) {
     setShowLookupModal(true);
   };
 
-  const handleConfirmLookup = () => {
+  const handleConfirmLookup = async () => {
     const cpfDigits = cpf.replace(/\D/g, '');
     const susDigits = sus.replace(/\D/g, '');
 
@@ -30,15 +31,43 @@ export default function RecepcaoScreen({ navigation }: Props) {
       return;
     }
 
-    setShowLookupModal(false);
-    setCpf('');
-    setSus('');
-    Toast.show({
-      type: 'success',
-      text1: 'Identificação confirmada',
-      text2: 'Senha gerada. Siga para o painel de espera.',
-    });
-    navigation.navigate('PacienteEspera', { pacienteNome: 'Paciente Retorno' });
+    try {
+      const response = await listPatients();
+      const pacienteEncontrado = response.patients.find((patient) => {
+        const cpfBackend = (patient.cpf || '').replace(/\D/g, '');
+        const susBackend = (patient.sus || '').replace(/\D/g, '');
+        return cpfBackend === cpfDigits || susBackend === susDigits;
+      });
+
+      if (!pacienteEncontrado) {
+        Toast.show({
+          type: 'error',
+          text1: 'Paciente não encontrado',
+          text2: 'Confira o CPF ou Cartão SUS e tente novamente.',
+        });
+        return;
+      }
+
+      setShowLookupModal(false);
+      setCpf('');
+      setSus('');
+      Toast.show({
+        type: 'success',
+        text1: 'Identificação confirmada',
+        text2: 'Senha gerada. Siga para o painel de espera.',
+      });
+      navigation.navigate('PacienteEspera', {
+        pacienteNome: pacienteEncontrado.nome.split(' ')[0],
+        pacienteId: pacienteEncontrado.id,
+        senha: pacienteEncontrado.senha,
+      });
+    } catch {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha na consulta',
+        text2: 'Não foi possível consultar o cadastro no momento.',
+      });
+    }
   };
 
   return (

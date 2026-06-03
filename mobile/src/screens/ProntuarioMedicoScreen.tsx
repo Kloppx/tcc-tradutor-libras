@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, StatusBar } from 'react-native';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import Toast from 'react-native-toast-message';
 import { RootStackScreenProps } from '../types/navigation';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { finalizeClinicalNote } from '../services/api';
 
 type Props = RootStackScreenProps<'ProntuarioMedico'>;
 
@@ -10,20 +12,41 @@ export default function ProntuarioMedicoScreen({ route, navigation }: Props) {
   const { paciente } = route.params;
   const [anamnese, setAnamnese] = useState('');
   const [conduta, setConduta] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const triagem = paciente.triagem || {};
 
-  const finalizarAtendimento = () => {
-    Toast.show({
-      type: 'success',
-      text1: 'Atendimento finalizado',
-      text2: `Prontuário de ${paciente.nome} atualizado com sucesso.`,
-    });
-    navigation.goBack();
+  const finalizarAtendimento = async () => {
+    setIsSaving(true);
+    try {
+      if (paciente.id) {
+        await finalizeClinicalNote(paciente.id, {
+          anamnese,
+          conduta,
+          status: 'done',
+        });
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Atendimento finalizado',
+        text2: `Prontuário de ${paciente.nome} atualizado com sucesso.`,
+      });
+      navigation.goBack();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha ao salvar',
+        text2: error instanceof Error ? error.message : 'Não foi possível atualizar o prontuário.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f7" />
       <HealthHeader title="Atendimento Clínico" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.patientHeader}>
@@ -63,14 +86,14 @@ export default function ProntuarioMedicoScreen({ route, navigation }: Props) {
             onChangeText={setConduta}
           />
 
-          <TouchableOpacity style={styles.btnFinish} onPress={finalizarAtendimento}>
-            <Text style={styles.btnText}>FINALIZAR ATENDIMENTO</Text>
+          <TouchableOpacity style={styles.btnFinish} onPress={finalizarAtendimento} disabled={isSaving}>
+            <Text style={styles.btnText}>{isSaving ? 'SALVANDO...' : 'FINALIZAR ATENDIMENTO'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       <LibrasFAB />
-    </View>
+    </SafeAreaView>
   );
 }
 

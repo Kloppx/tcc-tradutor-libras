@@ -39,10 +39,14 @@ export default function AnamneseScreen({ navigation }: any) {
       return;
     }
 
-    // A tela BodySelection espera apenas peso e altura.
-    navigation.navigate('BodySelection', { 
-      peso: peso || '0',
-      altura: altura || '0',
+    Toast.show({
+      type: 'success',
+      text1: 'Anamnese registrada',
+      text2: 'Você foi encaminhado para a fila de espera.',
+    });
+
+    navigation.navigate('PacienteEspera', {
+      pacienteNome: nome.split(' ')[0] || 'Paciente',
     });
   };
 

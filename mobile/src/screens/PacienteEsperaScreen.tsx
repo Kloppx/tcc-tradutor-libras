@@ -7,14 +7,12 @@ import { LibrasFAB } from '../components/GlobalComponents';
 type Props = RootStackScreenProps<'PacienteEspera'>;
 
 export default function PacienteEsperaScreen({ route, navigation }: Props) {
-  const { pacienteNome } = route.params;
-  const [senha] = useState(`N-${Math.floor(Math.random() * 90) + 10}`);
+  const { pacienteNome, senha: senhaRecebida } = route.params;
+  const [senha] = useState(senhaRecebida || `N-${Math.floor(Math.random() * 90) + 10}`);
   const [isCalled, setIsCalled] = useState(false);
   
-  // Animação para o alerta visual
   const [opacity] = useState(new Animated.Value(1));
 
-  // Simula a chamada do paciente após 7 segundos
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCalled(true);
@@ -22,7 +20,6 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Lógica da animação de piscar
   useEffect(() => {
     if (isCalled) {
       Animated.loop(
@@ -57,7 +54,6 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
           <Text style={styles.ticketNumber}>{senha}</Text>
         </View>
 
-        {/* Alerta Visual de Chamada (WCAG) */}
         <Animated.View 
           style={[
             styles.statusBox, 

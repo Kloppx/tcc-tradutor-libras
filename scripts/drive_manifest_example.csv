@@ -1,0 +1,4 @@
+label,source_url,signer,split,filename
+bom_dia,https://drive.google.com/file/d/SEU_FILE_ID/view?usp=sharing,p01,train,bom_dia_0001.mp4
+dor_cabeca,https://drive.google.com/file/d/SEU_FILE_ID/view?usp=sharing,p02,val,
+obrigado,https://drive.google.com/drive/folders/SEU_FOLDER_ID?usp=sharing,p03,train,

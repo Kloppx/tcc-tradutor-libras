@@ -8,20 +8,16 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
-
-// SIMULAÇÃO DE BANCO DE DADOS
-const USERS_MOCK = [
-  { email: 'medico@ubs.com', senha: '123', cargo: 'Medico', nome: 'Dr. Roberto' },
-  { email: 'enfermeiro@ubs.com', senha: '123', cargo: 'Enfermeiro', nome: 'Enf. Márcia' }
-];
+import { loginProfessional } from '../services/api';
 
 export default function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLoginProfissional = () => {
+  const handleLoginProfissional = async () => {
     if (email === '' || senha === '') {
       Toast.show({
         type: 'error',
@@ -31,28 +27,30 @@ export default function LoginScreen() {
       return;
     }
 
-    const usuarioEncontrado = USERS_MOCK.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.senha === senha
-    );
+    setIsLoading(true);
+    try {
+      const response = await loginProfessional(email, senha);
+      const usuarioEncontrado = response.user;
 
-    if (usuarioEncontrado) {
       Toast.show({
         type: 'success',
-        text1: `Bem-vindo(a), ${usuarioEncontrado.nome}!`,
+        text1: `Bem-vindo(a), ${usuarioEncontrado.name}!`,
         text2: 'Acesso liberado.'
       });
 
-      if (usuarioEncontrado.cargo === 'Medico') {
+      if (usuarioEncontrado.role === 'Medico') {
         navigation.replace('MedicoDashboard');
       } else {
         navigation.replace('EnfermagemDashboard'); 
       }
-    } else {
+    } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Acesso Negado',
-        text2: 'Credenciais inválidas. Tente novamente.'
+        text2: error instanceof Error ? error.message : 'Credenciais inválidas. Tente novamente.'
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -101,8 +99,9 @@ export default function LoginScreen() {
           <TouchableOpacity 
             style={styles.loginButton} 
             onPress={handleLoginProfissional}
+            disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>ENTRAR</Text>
+            <Text style={styles.loginButtonText}>{isLoading ? 'ENTRANDO...' : 'ENTRAR'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 

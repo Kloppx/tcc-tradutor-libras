@@ -1,0 +1,7 @@
+Accuracy: 62.50%
+Macro avg precision: 65.34%
+Macro avg recall: 63.50%
+Macro avg F1: 63.83%
+Weighted avg precision: 65.00%
+Weighted avg recall: 62.50%
+Weighted avg F1: 63.14%

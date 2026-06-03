@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import MaskInput from 'react-native-mask-input';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import { createPatient } from '../services/api';
 
 type Props = RootStackScreenProps<'PacienteCadastro'>;
 
@@ -22,6 +23,7 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
   const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [sus, setSus] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Data e Hora (Timestamp para BI)
   const [timestamp, setTimestamp] = useState('');
@@ -59,7 +61,7 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
     }
   }, [dataNascimento]);
 
-  const handleGerarSenha = () => {
+  const handleGerarSenha = async () => {
     const unmaskedCpf = cpf.replace(/\D/g, '');
     const unmaskedSus = sus.replace(/\D/g, '');
 
@@ -76,10 +78,35 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
       return;
     }
 
-    Toast.show({ type: 'success', text1: 'Cadastro realizado!', text2: 'Sua senha foi gerada.' });
-    
-    // Navega para a tela de espera, passando o nome do paciente
-    navigation.navigate('PacienteEspera', { pacienteNome: nome.split(' ')[0] });
+    setIsSaving(true);
+    try {
+      const response = await createPatient({
+        nome,
+        idade: idade ? Number(idade) : undefined,
+        estadoCivil,
+        endereco,
+        rg,
+        cpf: unmaskedCpf,
+        sus: unmaskedSus,
+        dataNascimento,
+        status: 'waiting',
+      });
+
+      Toast.show({ type: 'success', text1: 'Cadastro realizado!', text2: 'Sua senha foi gerada.' });
+      navigation.navigate('PacienteEspera', {
+        pacienteNome: response.patient.nome.split(' ')[0],
+        pacienteId: response.patient.id,
+        senha: response.patient.senha,
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha no cadastro',
+        text2: error instanceof Error ? error.message : 'Não foi possível registrar o paciente.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -132,8 +159,8 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
             <Text style={styles.label}>Cartão SUS</Text>
             <MaskInput style={styles.input} value={sus} onChangeText={setSus} mask={[/\d/,/\d/,/\d/,' ',/\d/,/\d/,/\d/,/\d/,' ',/\d/,/\d/,/\d/,/\d/,' ',/\d/,/\d/,/\d/,/\d/]} placeholder="000 0000 0000 0000" keyboardType="numeric" />
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleGerarSenha}>
-              <Text style={styles.submitButtonText}>CONCLUIR E GERAR SENHA</Text>
+            <TouchableOpacity style={styles.submitButton} onPress={handleGerarSenha} disabled={isSaving}>
+              <Text style={styles.submitButtonText}>{isSaving ? 'SALVANDO...' : 'CONCLUIR E GERAR SENHA'}</Text>
               <Ionicons name="arrow-forward-outline" size={22} color="#fff" />
             </TouchableOpacity>
           </View>

@@ -18,7 +18,6 @@ import RecepcaoScreen from '../screens/RecepcaoScreen';
 import AnamneseScreen from '../screens/AnamneseScreen';
 import PacienteCadastroScreen from '../screens/PacienteCadastroScreen';
 import PacienteEsperaScreen from '../screens/PacienteEsperaScreen';
-import BodySelectionScreen from '../screens/BodySelectionScreen';
 import SintomasScreen from '../screens/SintomasScreen';
 import ResumoScreen from '../screens/ResumoScreen';
 
@@ -73,33 +72,26 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SelectionProfile">
         
-        {/* === SELEÇÃO DE PERFIL E AUTENTICAÇÃO === */}
         <Stack.Screen name="SelectionProfile" component={SelectionProfileScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ProfissionalSignup" component={ProfissionalSignupScreen} />
         
-        {/* === FLUXO PRINCIPAL (TABS) === */}
         <Stack.Screen name="Main" component={MainTabs} />
 
-        {/* === FLUXO DO PACIENTE (TOTEM DE AUTOATENDIMENTO) === */}
         <Stack.Screen name="Recepcao" component={RecepcaoScreen} />
         <Stack.Screen name="Anamnese" component={AnamneseScreen} />
         <Stack.Screen name="PacienteCadastro" component={PacienteCadastroScreen} />
-        <Stack.Screen name="BodySelection" component={BodySelectionScreen} />
         <Stack.Screen name="Sintomas" component={SintomasScreen} />
         <Stack.Screen name="Resumo" component={ResumoScreen} />
         <Stack.Screen name="PacienteEspera" component={PacienteEsperaScreen} />
 
-        {/* === FLUXO MÉDICO === */}
         <Stack.Screen name="MedicoDashboard" component={MedicoDashboardScreen} />
         <Stack.Screen name="ProntuarioMedico" component={ProntuarioMedicoScreen} />
 
-        {/* === FLUXO ENFERMAGEM === */}
         <Stack.Screen name="EnfermagemDashboard" component={EnfermagemDashboardScreen} />
         <Stack.Screen name="ProcedimentosEnfermagem" component={ProcedimentosEnfermagemScreen} />
         <Stack.Screen name="TriagemAvancada" component={TriagemAvancadaScreen} />
         
-        {/* === TELAS ADICIONAIS === */}
         <Stack.Screen name="RealTimeTranslation" component={RealTimeTranslationScreen} />
 
       </Stack.Navigator>

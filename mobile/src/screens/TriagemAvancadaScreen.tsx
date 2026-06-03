@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import { saveTriage } from '../services/api';
 
 type Props = RootStackScreenProps<'TriagemAvancada'>;
 
@@ -45,6 +46,7 @@ const TitledSwitch = ({ label, value, onValueChange }: any) => (
 
 export default function TriagemAvancadaScreen({ route, navigation }: Props) {
   const paciente = route.params?.paciente || { nome: 'Paciente Padrão', idade: 30 };
+  const [isSaving, setIsSaving] = useState(false);
 
   // Sinais Vitais e Biometria
   const [peso, setPeso] = useState('');
@@ -84,13 +86,49 @@ export default function TriagemAvancadaScreen({ route, navigation }: Props) {
     }
   }, [peso, altura]);
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!peso || !altura || !temperatura || !pressao) {
       Toast.show({ type: 'error', text1: 'Dados Essenciais Faltando', text2: 'Peso, Altura, Temp. e PA são obrigatórios.' });
       return;
     }
-    Toast.show({ type: 'success', text1: 'Triagem Salva!', text2: `Dados de ${paciente.nome} enviados ao prontuário.` });
-    navigation.goBack();
+
+    setIsSaving(true);
+    try {
+      if (paciente.id) {
+        await saveTriage(paciente.id, {
+          pa: pressao,
+          temp: temperatura,
+          spo2: saturacao,
+          peso,
+          altura,
+          pulso,
+          freqResp,
+          glicemia,
+          glasgow,
+          vacinaEmDia,
+          has,
+          dm,
+          gravidez,
+          temAlergia,
+          alergiaDesc,
+          taquicardia,
+          dispneia,
+          sangramento,
+          queixa: paciente.triagem?.queixa || 'Triagem clínica realizada',
+        });
+      }
+
+      Toast.show({ type: 'success', text1: 'Triagem Salva!', text2: `Dados de ${paciente.nome} enviados ao prontuário.` });
+      navigation.goBack();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha ao salvar',
+        text2: error instanceof Error ? error.message : 'Não foi possível enviar a triagem.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -154,13 +192,8 @@ export default function TriagemAvancadaScreen({ route, navigation }: Props) {
             <TitledSwitch label="Sangramento Ativo" value={sangramento} onValueChange={setSangramento} />
           </View>
           
-          <TouchableOpacity style={styles.mapButton} onPress={() => navigation.navigate('BodySelection', { peso, altura })}>
-            <Ionicons name="body-outline" size={24} color="#fff" />
-            <Text style={styles.mapButtonText}>Mapear Dor Corporal</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
-            <Text style={styles.saveButtonText}>SALVAR TRIAGEM</Text>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSalvar} disabled={isSaving}>
+            <Text style={styles.saveButtonText}>{isSaving ? 'SALVANDO...' : 'SALVAR TRIAGEM'}</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -188,8 +221,6 @@ const styles = StyleSheet.create({
   switchLabel: { fontSize: 16, color: '#2C3E50', fontWeight: '500' },
   alertCard: { backgroundColor: '#FADBD8' },
   alertCardTitle: { color: '#C0392B' },
-  mapButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#3498DB', padding: 15, borderRadius: 12, marginTop: 10 },
-  mapButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
   saveButton: { backgroundColor: '#2ECC71', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 20 },
   saveButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });
