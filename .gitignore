@@ -31,6 +31,7 @@ videos/
 *.pth
 *.keras
 *.onnx
+!/models/modelo_final.h5
 
 # --- DADOS PROCESSADOS (MediaPipe) ---
 # Ignora numpy arrays salvos, mas permite CSV/JSON se você quiser
