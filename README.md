@@ -75,6 +75,8 @@ O backend expõe os principais endpoints em `/api`:
 
 - `POST /api/auth/login`
 - `POST /api/auth/register`
+- `GET /api/professionals`
+- `DELETE /api/professionals/{id}`
 - `GET /api/patients`
 - `POST /api/patients`
 - `PUT /api/patients/{id}/triage`

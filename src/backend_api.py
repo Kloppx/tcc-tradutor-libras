@@ -11,7 +11,7 @@ import hashlib
 import json
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -81,32 +81,10 @@ def _create_tables(connection: sqlite3.Connection) -> None:
 
 
 def _seed_defaults(connection: sqlite3.Connection) -> None:
-    users_total = connection.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
     patients_total = connection.execute("SELECT COUNT(*) AS total FROM patients").fetchone()["total"]
 
-    if users_total == 0:
-        seed_users = [
-            ("Dr. Roberto", "medico@ubs.com", "123", "Medico", None),
-            ("Enf. Márcia", "enfermeiro@ubs.com", "123", "Enfermeiro", None),
-        ]
-        for name, email, password, role, council in seed_users:
-            connection.execute(
-                """
-                INSERT INTO users (id, name, email, password_hash, role, council_number, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    str(uuid.uuid4()),
-                    name,
-                    email,
-                    _hash_password(password),
-                    role,
-                    council,
-                    _now(),
-                ),
-            )
-
     if patients_total == 0:
+        created_at_anchor = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
         seed_patients = [
             {
                 "nome": "Ana Paula Souza",
@@ -162,8 +140,9 @@ def _seed_defaults(connection: sqlite3.Connection) -> None:
             },
         ]
 
-        for seed_patient in seed_patients:
+        for index, seed_patient in enumerate(seed_patients):
             triage = seed_patient.pop("triagem", {})
+            created_at = (created_at_anchor - timedelta(hours=(len(seed_patients) - 1 - index))).isoformat()
             connection.execute(
                 """
                 INSERT INTO patients (
@@ -188,10 +167,38 @@ def _seed_defaults(connection: sqlite3.Connection) -> None:
                     seed_patient.get("status", "waiting"),
                     json.dumps(triage, ensure_ascii=False),
                     "",
-                    _now(),
-                    _now(),
+                    created_at,
+                    created_at,
                 ),
             )
+
+
+def _backfill_patient_arrival_times(connection: sqlite3.Connection, window_hours: int = 6) -> None:
+    rows = connection.execute(
+        """
+        SELECT id
+        FROM patients
+        WHERE cpf IS NULL AND sus IS NULL AND birth_date IS NULL
+        ORDER BY created_at, id
+        """
+    ).fetchall()
+    if not rows:
+        return
+
+    anchor = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    start = anchor - timedelta(hours=min(window_hours, len(rows)) - 1)
+
+    for index, row in enumerate(rows):
+        slot = start + timedelta(hours=index % window_hours)
+        created_at = (slot + timedelta(minutes=(index * 7) % 50)).isoformat()
+        connection.execute(
+            """
+            UPDATE patients
+            SET created_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (created_at, created_at, row["id"]),
+        )
 
 
 def init_db() -> None:
@@ -199,6 +206,7 @@ def init_db() -> None:
     try:
         _create_tables(connection)
         _seed_defaults(connection)
+        _backfill_patient_arrival_times(connection)
         connection.commit()
     finally:
         connection.close()
@@ -249,6 +257,17 @@ def _parse_float(value: Any) -> Optional[float]:
         return None
 
 
+def _row_to_user(row: sqlite3.Row) -> Dict[str, Any]:
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "email": row["email"],
+        "role": row["role"],
+        "councilNumber": row["council_number"],
+        "createdAt": row["created_at"],
+    }
+
+
 def _parse_int(value: Any) -> Optional[int]:
     if value is None:
         return None
@@ -295,6 +314,15 @@ def _calculate_risk(payload: Dict[str, Any]) -> str:
         return "Amarelo"
 
     return "Verde"
+
+
+def _parse_iso_datetime(value: str) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 @router.get("/health")
@@ -365,6 +393,40 @@ def register(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {"user": {"id": user_id, "name": name, "email": email, "role": role, "councilNumber": council_number}}
 
 
+@router.get("/professionals")
+def list_professionals(role: Optional[str] = None) -> Dict[str, Any]:
+    connection = _connect()
+    try:
+        if role:
+            rows = connection.execute(
+                "SELECT * FROM users WHERE role = ? ORDER BY created_at DESC",
+                (role,),
+            ).fetchall()
+        else:
+            rows = connection.execute("SELECT * FROM users ORDER BY created_at DESC").fetchall()
+        professionals = [_row_to_user(row) for row in rows]
+    finally:
+        connection.close()
+
+    return {"professionals": professionals}
+
+
+@router.delete("/professionals/{professional_id}")
+def delete_professional(professional_id: str) -> Dict[str, str]:
+    connection = _connect()
+    try:
+        row = connection.execute("SELECT id FROM users WHERE id = ?", (professional_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Profissional não encontrado")
+
+        connection.execute("DELETE FROM users WHERE id = ?", (professional_id,))
+        connection.commit()
+    finally:
+        connection.close()
+
+    return {"status": "deleted"}
+
+
 @router.get("/patients")
 def list_patients(status: Optional[str] = None) -> Dict[str, Any]:
     connection = _connect()
@@ -381,6 +443,50 @@ def list_patients(status: Optional[str] = None) -> Dict[str, Any]:
         connection.close()
 
     return {"patients": patients}
+
+
+@router.get("/metrics/attendances-hourly")
+def attendances_hourly(window_hours: int = 6) -> Dict[str, Any]:
+    window_hours = max(1, min(window_hours, 24))
+    connection = _connect()
+    try:
+        anchor_row = connection.execute("SELECT MAX(created_at) AS latest FROM patients").fetchone()
+        latest_created_at = _parse_iso_datetime(anchor_row["latest"] or "") if anchor_row else None
+
+        rows = connection.execute("SELECT created_at FROM patients").fetchall()
+    finally:
+        connection.close()
+
+    now = (latest_created_at or datetime.utcnow()).replace(minute=0, second=0, microsecond=0)
+    start = now - timedelta(hours=window_hours - 1)
+
+    slots = []
+    counts = []
+    for offset in range(window_hours):
+        slot = start + timedelta(hours=offset)
+        slots.append(slot)
+        counts.append(0)
+
+    index_by_slot = {slot.strftime("%Y-%m-%d %H"): idx for idx, slot in enumerate(slots)}
+
+    for row in rows:
+        created_at = _parse_iso_datetime(row["created_at"])
+        if created_at is None:
+            continue
+
+        created_at_hour = created_at.replace(minute=0, second=0, microsecond=0)
+        key = created_at_hour.strftime("%Y-%m-%d %H")
+        idx = index_by_slot.get(key)
+        if idx is not None:
+            counts[idx] += 1
+
+    labels = [slot.strftime("%Hh") for slot in slots]
+    return {
+        "windowHours": window_hours,
+        "labels": labels,
+        "values": counts,
+        "generatedAt": _now(),
+    }
 
 
 @router.get("/patients/{patient_id}")
