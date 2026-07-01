@@ -44,7 +44,7 @@ export default function SelectionProfileScreen({ navigation }: Props) {
           <Text style={styles.cardDesc}>Acessar o painel de gerenciamento.</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.secondaryCard}
           onPress={() => navigation.navigate('Main')}
           accessible={true}
@@ -54,7 +54,19 @@ export default function SelectionProfileScreen({ navigation }: Props) {
         >
           <Ionicons name="apps-outline" size={24} color="#1C3A59" />
           <Text style={styles.secondaryCardText}>Modo demonstração do aplicativo</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+
+        {/* <TouchableOpacity
+          style={styles.secondaryCard}
+          onPress={() => navigation.navigate('GestaoProfissionais')}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Gestão de profissionais"
+          accessibilityHint="Abre a tela para cadastrar e administrar médicos e enfermeiros"
+        >
+          <Ionicons name="people-outline" size={24} color="#1C3A59" />
+          <Text style={styles.secondaryCardText}>Gestão da clínica (cadastro da equipe)</Text>
+        </TouchableOpacity> */}
       </View>
     </View>
   );

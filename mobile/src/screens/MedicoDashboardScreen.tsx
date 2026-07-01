@@ -8,32 +8,7 @@ import { listPatients } from '../services/api';
 
 type Props = RootStackScreenProps<'MedicoDashboard'>;
 
-const PACIENTES_TRIADOS: PacienteTriagem[] = [
-  {
-    id: '1',
-    nome: 'João da Silva',
-    senha: 'H-01',
-    risco: 'Verde',
-    especialidade: 'Clínico Geral',
-    triagem: { pa: '120/80', temp: '36.5', spo2: '98', peso: '75', queixa: 'Dor de cabeça constante' },
-  },
-  {
-    id: '2',
-    nome: 'Maria Oliveira',
-    senha: 'H-02',
-    risco: 'Amarelo',
-    especialidade: 'Clínico Geral',
-    triagem: { pa: '145/90', temp: '37.2', spo2: '96', peso: '70', queixa: 'Dor torácica leve' },
-  },
-  {
-    id: '3',
-    nome: 'José Santos',
-    senha: 'H-03',
-    risco: 'Vermelho',
-    especialidade: 'Urgência',
-    triagem: { pa: '170/105', temp: '38.1', spo2: '91', peso: '82', queixa: 'Dispneia e dor no peito' },
-  },
-];
+const PACIENTES_TRIADOS: PacienteTriagem[] = [];
 
 const RISK_PRIORITY: Record<NonNullable<PacienteTriagem['risco']>, number> = {
   Vermelho: 1,
@@ -57,7 +32,7 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
     };
 
     loadPatients();
-  }, []);
+  }, [pacientes]);
 
   const pacientesOrdenados = useMemo(() => {
     return [...pacientes].sort((a, b) => {

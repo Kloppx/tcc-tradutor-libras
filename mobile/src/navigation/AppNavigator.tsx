@@ -12,6 +12,7 @@ import Toast from 'react-native-toast-message';
 import LoginScreen from '../screens/LoginScreen';
 import ProfissionalSignupScreen from '../screens/ProfissionalSignupScreen';
 import SelectionProfileScreen from '../screens/SelectionProfileScreen';
+import GestaoProfissionaisScreen from '../screens/GestaoProfissionaisScreen';
 
 // 2. Fluxo do Paciente (Totem)
 import RecepcaoScreen from '../screens/RecepcaoScreen';
@@ -75,6 +76,7 @@ export default function AppNavigator() {
         <Stack.Screen name="SelectionProfile" component={SelectionProfileScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ProfissionalSignup" component={ProfissionalSignupScreen} />
+        <Stack.Screen name="GestaoProfissionais" component={GestaoProfissionaisScreen} />
         
         <Stack.Screen name="Main" component={MainTabs} />
 

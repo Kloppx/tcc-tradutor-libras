@@ -32,6 +32,7 @@ export type BackendUser = {
   email: string;
   role: string;
   councilNumber?: string | null;
+  createdAt?: string;
 };
 
 export type BackendPatient = {
@@ -48,6 +49,8 @@ export type BackendPatient = {
   estadoCivil?: string | null;
   endereco?: string | null;
   status?: string;
+  createdAt?: string;
+  updatedAt?: string;
   triagem?: Record<string, unknown>;
   clinicalNote?: string;
 };
@@ -72,6 +75,17 @@ export async function registerProfessional(payload: {
   });
 }
 
+export async function listProfessionals(role?: string) {
+  const query = role ? `?role=${encodeURIComponent(role)}` : '';
+  return request<{ professionals: BackendUser[] }>(`/api/professionals${query}`);
+}
+
+export async function deleteProfessional(professionalId: string) {
+  return request<{ status: string }>(`/api/professionals/${professionalId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function createPatient(payload: Record<string, unknown>) {
   return request<{ patient: BackendPatient }>('/api/patients', {
     method: 'POST',
@@ -82,6 +96,19 @@ export async function createPatient(payload: Record<string, unknown>) {
 export async function listPatients(status?: string) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';
   return request<{ patients: BackendPatient[] }>(`/api/patients${query}`);
+}
+
+export async function deletePatient(patientId: string) {
+  return request<{ status: string }>(`/api/patients/${patientId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getAttendancesHourly(windowHours = 6) {
+  const query = `?window_hours=${encodeURIComponent(String(windowHours))}`;
+  return request<{ windowHours: number; labels: string[]; values: number[]; generatedAt: string }>(
+    `/api/metrics/attendances-hourly${query}`
+  );
 }
 
 export async function saveTriage(patientId: string, payload: Record<string, unknown>) {

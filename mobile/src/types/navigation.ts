@@ -8,6 +8,8 @@ export type PacienteTriagem = {
   risco?: 'Vermelho' | 'Amarelo' | 'Verde';
   especialidade?: string;
   status?: string;
+  createdAt?: string;
+  updatedAt?: string;
   triagem?: {
     pa?: string;
     temp?: string;
@@ -21,6 +23,7 @@ export type RootStackParamList = {
   SelectionProfile: undefined;
   Login: undefined;
   ProfissionalSignup: undefined;
+  GestaoProfissionais: undefined;
   Main: undefined;
 
   Recepcao: undefined;

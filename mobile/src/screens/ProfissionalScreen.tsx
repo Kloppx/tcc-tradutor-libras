@@ -1,32 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { listPatients, BackendPatient } from '../services/api';
+import Toast from 'react-native-toast-message';
 
-// Simulando dados que viriam de um banco (BI Style)
-const PACIENTES_FILA = [
-  { id: '1', nome: 'João Silva', urgencia: 'Alta', region: 'Tronco', sintomas: ['Dor no peito', 'Falta de ar'] },
-  { id: '2', nome: 'Maria Oliveira', urgencia: 'Média', region: 'Cabeça', sintomas: ['Tontura'] },
-  { id: '3', nome: 'Paciente Atual (Você)', urgencia: 'Baixa', region: 'Braço', sintomas: ['Inchaço'] },
-];
+const RISK_COLOR: Record<string, string> = {
+  Vermelho: '#F44336',
+  Amarelo: '#FFC107',
+  Verde: '#4CAF50',
+};
 
 export default function ProfissionalScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [patients, setPatients] = useState<BackendPatient[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await listPatients();
+        setPatients(response.patients);
+      } catch (error) {
+        Toast.show({
+          type: 'error',
+          text1: 'Falha ao carregar pacientes',
+          text2: error instanceof Error ? error.message : 'Não foi possível consultar o back-end.',
+        });
+      }
+    };
+
+    load();
+  }, []);
 
   const handleLogout = () => {
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
-  const renderPaciente = ({ item }: { item: typeof PACIENTES_FILA[0] }) => (
+  const renderPaciente = ({ item }: { item: BackendPatient }) => (
     <View style={styles.card}>
-      <View style={[styles.urgencyBar, { backgroundColor: item.urgencia === 'Alta' ? '#F44336' : '#FFC107' }]} />
+      <View style={[styles.urgencyBar, { backgroundColor: RISK_COLOR[item.risco || 'Verde'] || '#FFC107' }]} />
       
       <View style={styles.cardContent}>
         <Text style={styles.pacienteNome}>{item.nome}</Text>
-        <Text style={styles.pacienteInfo}><Text style={{fontWeight:'bold'}}>Região:</Text> {item.region}</Text>
-        <Text style={styles.pacienteInfo}><Text style={{fontWeight:'bold'}}>Sintomas:</Text> {item.sintomas.join(', ')}</Text>
+        <Text style={styles.pacienteInfo}><Text style={{fontWeight:'bold'}}>Senha:</Text> {item.senha || '--'}</Text>
+        <Text style={styles.pacienteInfo}><Text style={{fontWeight:'bold'}}>Risco:</Text> {item.risco || 'Não definido'}</Text>
       </View>
 
       {/* BOTÃO PARA INICIAR TRADUÇÃO DE LIBRAS */}
@@ -45,7 +64,7 @@ export default function ProfissionalScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Painel Médico</Text>
-          <Text style={styles.subtitle}>Fila de Atendimento - UBS</Text>
+          <Text style={styles.subtitle}>Fila de Atendimento (dados do back-end)</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#666" />
@@ -53,9 +72,10 @@ export default function ProfissionalScreen() {
       </View>
 
       <FlatList
-        data={PACIENTES_FILA}
+        data={patients}
         keyExtractor={(item) => item.id}
         renderItem={renderPaciente}
+        ListEmptyComponent={<Text style={styles.empty}>Nenhum paciente disponível no momento.</Text>}
         contentContainerStyle={{ padding: 20 }}
       />
     </View>
@@ -76,5 +96,6 @@ const styles = StyleSheet.create({
   pacienteInfo: { fontSize: 14, color: '#666' },
   
   btnLibras: { backgroundColor: '#2196F3', width: 90, justifyContent: 'center', alignItems: 'center', padding: 10 },
-  btnText: { color: '#fff', fontSize: 12, fontWeight: 'bold', marginTop: 5 }
+  btnText: { color: '#fff', fontSize: 12, fontWeight: 'bold', marginTop: 5 },
+  empty: { textAlign: 'center', color: '#666', marginTop: 40, fontSize: 15 },
 });

@@ -1,83 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Dimensions, StatusBar } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LineChart } from 'react-native-chart-kit'; 
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
-import { listPatients } from '../services/api';
+import { listPatients, deletePatient } from '../services/api';
 
-const screenWidth = Dimensions.get("window").width;
+const DADOS_FILA: PacienteTriagem[] = [];
 
-// DADOS MOCKADOS PARA A FILA DE PACIENTES
-const DADOS_FILA: PacienteTriagem[] = [
-  {
-    id: '1',
-    nome: 'Ana Paula Souza',
-    idade: 22,
-    senha: 'N-45',
-    risco: 'Verde',
-    triagem: { pa: '118/76', temp: '36.4', spo2: '98', peso: '62', queixa: 'Dor de garganta' },
-  },
-  {
-    id: '2',
-    nome: 'Ricardo Alencar',
-    idade: 45,
-    senha: 'N-46',
-    risco: 'Amarelo',
-    triagem: { pa: '142/92', temp: '37.1', spo2: '96', peso: '84', queixa: 'Dor no peito leve' },
-  },
-  {
-    id: '3',
-    nome: 'Beatriz Lins',
-    idade: 31,
-    senha: 'N-47',
-    risco: 'Verde',
-    triagem: { pa: '120/80', temp: '36.8', spo2: '99', peso: '68', queixa: 'Cefaleia' },
-  },
-  {
-    id: '4',
-    nome: 'Carlos Andrade',
-    idade: 56,
-    senha: 'N-48',
-    risco: 'Amarelo',
-    triagem: { pa: '150/95', temp: '37.3', spo2: '95', peso: '90', queixa: 'Tontura' },
-  },
-];
+const formatArrivalTime = (createdAt?: string) => {
+  if (!createdAt) return '--';
 
-// DADOS MOCKADOS PARA O GRÁFICO DE FLUXO
-const DADOS_GRAFICO = {
-  labels: ["08h", "10h", "12h", "14h", "16h", "18h"],
-  datasets: [{ data: [4, 15, 10, 25, 18, 12] }]
-};
+  const parsedDate = new Date(createdAt);
+  if (Number.isNaN(parsedDate.getTime())) return '--';
 
-const HORA_CHEGADA: Record<string, string> = {
-  '1': '08:15',
-  '2': '08:18',
-  '3': '08:22',
-  '4': '08:25',
+  return parsedDate.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 };
 
 type Props = RootStackScreenProps<'EnfermagemDashboard'>;
 
 export default function EnfermagemDashboardScreen({ navigation }: Props) {
   const [pacientes, setPacientes] = useState<PacienteTriagem[]>(DADOS_FILA);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadPatients = useCallback(async () => {
+    try {
+      const patientsResponse = await listPatients('waiting');
+
+      setPacientes(patientsResponse.patients as PacienteTriagem[]);
+    } catch {
+      setPacientes(DADOS_FILA);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadPatients = async () => {
-      try {
-        const response = await listPatients('waiting');
-        if (response.patients.length > 0) {
-          setPacientes(response.patients as PacienteTriagem[]);
-        }
-      } catch {
-        setPacientes(DADOS_FILA);
-      }
-    };
-
     loadPatients();
-  }, []);
+  }, [loadPatients]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -93,24 +56,74 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
     );
   };
 
+  const handleDeletePatient = (item: PacienteTriagem) => {
+    if (!item.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Não foi possível excluir',
+        text2: 'Paciente sem identificação válida.',
+      });
+      return;
+    }
+
+    Alert.alert(
+      'Excluir paciente',
+      `Deseja remover ${item.nome} da fila e do banco?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(item.id || null);
+              await deletePatient(item.id as string);
+              Toast.show({ type: 'success', text1: 'Paciente excluído com sucesso.' });
+              await loadPatients();
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Erro ao excluir paciente',
+                text2: error instanceof Error ? error.message : 'Não foi possível concluir a exclusão.',
+              });
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item }: { item: PacienteTriagem }) => (
-    <TouchableOpacity 
-      style={styles.patientCard}
-      onPress={() => navigation.navigate('TriagemAvancada', { paciente: item })}
-      accessible={true}
-      accessibilityLabel={`Paciente ${item.nome}, ${item.idade} anos. Toque para iniciar triagem.`}
-    >
-      <View style={styles.patientIcon}>
-        <Ionicons name="person-outline" size={30} color="#3498DB" />
-      </View>
-      <View style={styles.patientInfo}>
-        <Text style={styles.patientName}>{item.nome}</Text>
-        <Text style={styles.patientDetails}>
-          {item.idade ?? '--'} anos • Senha: {item.senha ?? '--'} • Chegada: {HORA_CHEGADA[item.id || ''] ?? '--'}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward-outline" size={24} color="#BDC3C7" />
-    </TouchableOpacity>
+    <View style={styles.patientCard}>
+      <TouchableOpacity
+        style={styles.patientPrimaryAction}
+        onPress={() => navigation.navigate('TriagemAvancada', { paciente: item })}
+        accessible={true}
+        accessibilityLabel={`Paciente ${item.nome}, ${item.idade} anos. Toque para iniciar triagem.`}
+      >
+        <View style={styles.patientIcon}>
+          <Ionicons name="person-outline" size={30} color="#3498DB" />
+        </View>
+        <View style={styles.patientInfo}>
+          <Text style={styles.patientName}>{item.nome}</Text>
+          <Text style={styles.patientDetails}>
+            {item.idade ?? '--'} anos • Senha: {item.senha ?? '--'} • Chegada: {formatArrivalTime(item.createdAt)}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward-outline" size={24} color="#BDC3C7" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.deleteButton, deletingId === item.id && styles.deleteButtonDisabled]}
+        onPress={() => handleDeletePatient(item)}
+        disabled={deletingId === item.id}
+        accessibilityLabel={`Excluir paciente ${item.nome}`}
+      >
+        <Ionicons name="trash-outline" size={18} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -119,36 +132,11 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Painel de Enfermagem</Text>
-          <Text style={styles.headerSubtitle}>Olá, Enf. Márcia! 👋</Text>
+          <Text style={styles.headerSubtitle}>Olá, equipe de enfermagem!</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} accessibilityLabel="Sair da sua conta">
           <Ionicons name="log-out-outline" size={30} color="#E74C3C" />
         </TouchableOpacity>
-      </View>
-
-      {/* Seção do Gráfico de BI */}
-      <View style={styles.chartContainer}>
-        <Text style={styles.sectionTitle}>Volume de Atendimentos por Hora</Text>
-        <LineChart
-          data={DADOS_GRAFICO}
-          width={screenWidth - 40}
-          height={180}
-          yAxisLabel=""
-          yAxisSuffix=""
-          yAxisInterval={1}
-          chartConfig={{
-            backgroundColor: "#F0F4F8",
-            backgroundGradientFrom: "#F0F4F8",
-            backgroundGradientTo: "#F0F4F8",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(52, 152, 219, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(44, 62, 80, ${opacity})`,
-            style: { borderRadius: 16 },
-            propsForDots: { r: "5", strokeWidth: "2", stroke: "#3498DB" }
-          }}
-          bezier
-          style={styles.chart}
-        />
       </View>
 
       {/* Seção da Lista de Pacientes (FlatList) */}
@@ -195,20 +183,11 @@ const styles = StyleSheet.create({
     color: '#7F8C8D',
     marginTop: 4,
   },
-  chartContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAECEE',
-  },
   sectionTitle: { 
     fontSize: 18, 
     fontWeight: '700', 
     color: '#34495E', 
     marginBottom: 15 
-  },
-  chart: { 
-    alignSelf: 'center',
   },
   listContainer: {
     flex: 1,
@@ -218,9 +197,17 @@ const styles = StyleSheet.create({
   patientCard: { 
     backgroundColor: '#fff', 
     borderRadius: 12, 
-    padding: 15, 
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 10,
     flexDirection: 'row', 
     alignItems: 'center',
+  },
+  patientPrimaryAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
   },
   patientIcon: {
     marginRight: 15,
@@ -240,5 +227,17 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 10,
+  },
+  deleteButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E74C3C',
+    marginLeft: 8,
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
   },
 });
