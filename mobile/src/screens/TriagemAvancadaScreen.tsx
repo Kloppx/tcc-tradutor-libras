@@ -3,7 +3,6 @@ import {
   ScrollView, View, Text, StyleSheet, TextInput, Switch, 
   TouchableOpacity, KeyboardAvoidingView, Platform, StatusBar 
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { RootStackScreenProps } from '../types/navigation';
@@ -11,6 +10,22 @@ import { LibrasFAB } from '../components/GlobalComponents';
 import { saveTriage } from '../services/api';
 
 type Props = RootStackScreenProps<'TriagemAvancada'>;
+
+const getInitialTriageValue = (triagem: Record<string, unknown> | undefined, key: string) => {
+  const value = triagem?.[key];
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  return '';
+};
+
+const maskBloodPressure = (input: string) => {
+  const digits = input.replace(/\D/g, '').slice(0, 6);
+  if (digits.length <= 3) {
+    return digits;
+  }
+  return `${digits.slice(0, 3)}/${digits.slice(3)}`;
+};
 
 // Componente de Input Acessível
 const TitledInput = ({ label, value, onChangeText, placeholder, keyboardType = 'default', editable = true, accessibilityLabel, ...props }: any) => (
@@ -46,19 +61,20 @@ const TitledSwitch = ({ label, value, onValueChange }: any) => (
 
 export default function TriagemAvancadaScreen({ route, navigation }: Props) {
   const paciente = route.params?.paciente || { nome: 'Paciente Padrão', idade: 30 };
+  const triagemInicial = (paciente.triagem as Record<string, unknown> | undefined) || {};
   const [isSaving, setIsSaving] = useState(false);
 
   // Sinais Vitais e Biometria
-  const [peso, setPeso] = useState('');
-  const [altura, setAltura] = useState('');
+  const [peso, setPeso] = useState(getInitialTriageValue(triagemInicial, 'peso'));
+  const [altura, setAltura] = useState(getInitialTriageValue(triagemInicial, 'altura'));
   const [imc, setImc] = useState('');
-  const [temperatura, setTemperatura] = useState('');
-  const [pressao, setPressao] = useState('');
-  const [pulso, setPulso] = useState('');
-  const [saturacao, setSaturacao] = useState('');
-  const [freqResp, setFreqResp] = useState('');
-  const [glicemia, setGlicemia] = useState('');
-  const [glasgow, setGlasgow] = useState('15');
+  const [temperatura, setTemperatura] = useState(getInitialTriageValue(triagemInicial, 'temp'));
+  const [pressao, setPressao] = useState(getInitialTriageValue(triagemInicial, 'pa'));
+  const [pulso, setPulso] = useState(getInitialTriageValue(triagemInicial, 'pulso'));
+  const [saturacao, setSaturacao] = useState(getInitialTriageValue(triagemInicial, 'spo2'));
+  const [freqResp, setFreqResp] = useState(getInitialTriageValue(triagemInicial, 'freqResp'));
+  const [glicemia, setGlicemia] = useState(getInitialTriageValue(triagemInicial, 'glicemia'));
+  const [glasgow, setGlasgow] = useState(getInitialTriageValue(triagemInicial, 'glasgow'));
 
   // Condições Clínicas
   const [vacinaEmDia, setVacinaEmDia] = useState(true);
@@ -160,13 +176,20 @@ export default function TriagemAvancadaScreen({ route, navigation }: Props) {
             </View>
             <View style={styles.row}>
               <TitledInput label="Temp. (°C)" value={temperatura} onChangeText={setTemperatura} placeholder="36,5" keyboardType="decimal-pad" />
-              <TitledInput label="PA (mmHg)" value={pressao} onChangeText={setPressao} placeholder="120/80" />
+              <TitledInput
+                label="PA (mmHg)"
+                value={pressao}
+                onChangeText={(value: string) => setPressao(maskBloodPressure(value))}
+                placeholder="120/80"
+                keyboardType="number-pad"
+                maxLength={7}
+              />
               <TitledInput label="Pulso (bpm)" value={pulso} onChangeText={setPulso} placeholder="80" keyboardType="number-pad" />
             </View>
             <View style={styles.row}>
               <TitledInput label="Sat O₂ (%)" value={saturacao} onChangeText={setSaturacao} placeholder="98" keyboardType="number-pad" />
               <TitledInput label="FR (irpm)" value={freqResp} onChangeText={setFreqResp} placeholder="16" keyboardType="number-pad" />
-              <TitledInput label="Glasgow" value={glasgow} onChangeText={setGlasgow} placeholder="15" keyboardType="number-pad" />
+              <TitledInput label="Glasgow" value={glasgow} onChangeText={setGlasgow} placeholder="Ex: 15" keyboardType="number-pad" />
             </View>
             <TitledInput label="Glicemia (mg/dL)" value={glicemia} onChangeText={setGlicemia} placeholder="95" keyboardType="number-pad" />
           </View>

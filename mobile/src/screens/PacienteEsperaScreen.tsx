@@ -1,24 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import { getPatient } from '../services/api';
 
 type Props = RootStackScreenProps<'PacienteEspera'>;
 
 export default function PacienteEsperaScreen({ route, navigation }: Props) {
-  const { pacienteNome, senha: senhaRecebida } = route.params;
+  const { pacienteNome, pacienteId, senha: senhaRecebida } = route.params;
   const [senha] = useState(senhaRecebida || `N-${Math.floor(Math.random() * 90) + 10}`);
   const [isCalled, setIsCalled] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [opacity] = useState(new Animated.Value(1));
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsCalled(true);
-    }, 7000);
-    return () => clearTimeout(timer);
-  }, []);
+    const loadStatus = async () => {
+      if (!pacienteId) {
+        return;
+      }
+
+      try {
+        setIsRefreshing(true);
+        const response = await getPatient(pacienteId);
+        setIsCalled(response.patient.status === 'called');
+      } catch {
+        setIsCalled(false);
+      } finally {
+        setIsRefreshing(false);
+      }
+    };
+
+    loadStatus();
+  }, [pacienteId]);
 
   useEffect(() => {
     if (isCalled) {
@@ -72,6 +87,25 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
             {isCalled ? "DIRIJA-SE À TRIAGEM" : "AGUARDANDO CHAMADA"}
           </Text>
         </Animated.View>
+
+        {pacienteId && (
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={async () => {
+              try {
+                setIsRefreshing(true);
+                const response = await getPatient(pacienteId);
+                setIsCalled(response.patient.status === 'called');
+              } finally {
+                setIsRefreshing(false);
+              }
+            }}
+            accessibilityLabel="Atualizar status da chamada"
+          >
+            <Ionicons name="refresh-outline" size={18} color="#fff" />
+            <Text style={styles.refreshButtonText}>{isRefreshing ? 'ATUALIZANDO...' : 'ATUALIZAR STATUS'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <TouchableOpacity 
@@ -178,6 +212,21 @@ const styles = StyleSheet.create({
   homeButtonText: {
     color: '#fff',
     fontSize: 16,
+    marginLeft: 8,
+    fontWeight: '600',
+  },
+  refreshButton: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 25,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 14,
     marginLeft: 8,
     fontWeight: '600',
   },

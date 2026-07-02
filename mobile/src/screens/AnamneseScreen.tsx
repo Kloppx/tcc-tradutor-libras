@@ -21,6 +21,22 @@ export default function AnamneseScreen({ navigation }: any) {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  const maskPeso = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 4);
+    if (digits.length <= 3) {
+      return digits;
+    }
+    return `${digits.slice(0, 3)},${digits.slice(3)}`;
+  };
+
+  const maskAltura = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 3);
+    if (digits.length <= 1) {
+      return digits;
+    }
+    return `${digits.slice(0, 1)},${digits.slice(1)}`;
+  };
+
   const handleNext = () => {
     const cpfLimpo = cpf.replace(/\D/g, '');
 
@@ -82,20 +98,20 @@ export default function AnamneseScreen({ navigation }: any) {
           <Text style={styles.label}>Peso (opcional)</Text>
           <TextInput 
             style={styles.input} 
-            placeholder="Ex: 75"
+            placeholder="Ex: 75,5"
             keyboardType="numeric"
             value={peso}
-            onChangeText={setPeso}
-            maxLength={3}
+            onChangeText={(txt) => setPeso(maskPeso(txt))}
+            maxLength={5}
           />
 
           <Text style={styles.label}>Altura (opcional)</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ex: 1.70"
+            placeholder="Ex: 1,70"
             keyboardType="numeric"
             value={altura}
-            onChangeText={setAltura}
+            onChangeText={(txt) => setAltura(maskAltura(txt))}
             maxLength={4}
           />
 

@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, StatusBar } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
@@ -8,6 +8,13 @@ import { LibrasFAB } from '../components/GlobalComponents';
 import { listPatients, deletePatient } from '../services/api';
 
 const DADOS_FILA: PacienteTriagem[] = [];
+
+const STATUS_LABELS: Record<string, { label: string; backgroundColor: string; textColor: string }> = {
+  waiting: { label: 'Aguardando triagem', backgroundColor: '#E8F4FD', textColor: '#1976D2' },
+  triaged: { label: 'Triado', backgroundColor: '#E8F8F1', textColor: '#1E8449' },
+  called: { label: 'Chamado', backgroundColor: '#FFF3E0', textColor: '#EF6C00' },
+  done: { label: 'Atendido', backgroundColor: '#F3E5F5', textColor: '#7B1FA2' },
+};
 
 const formatArrivalTime = (createdAt?: string) => {
   if (!createdAt) return '--';
@@ -30,17 +37,39 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
 
   const loadPatients = useCallback(async () => {
     try {
-      const patientsResponse = await listPatients('waiting');
+      const [waitingResponse, triagedResponse] = await Promise.all([
+        listPatients('waiting'),
+        listPatients('triaged'),
+      ]);
 
-      setPacientes(patientsResponse.patients as PacienteTriagem[]);
+      const combinedPatients = [...waitingResponse.patients, ...triagedResponse.patients] as PacienteTriagem[];
+      combinedPatients.sort((a, b) => {
+        const statusOrder = (status?: string) => (status === 'waiting' ? 0 : 1);
+        const orderDiff = statusOrder(a.status) - statusOrder(b.status);
+        if (orderDiff !== 0) return orderDiff;
+
+        const updatedA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const updatedB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return updatedB - updatedA;
+      });
+
+      setPacientes(combinedPatients);
     } catch {
       setPacientes(DADOS_FILA);
     }
   }, []);
 
-  useEffect(() => {
-    loadPatients();
-  }, [loadPatients]);
+  const summary = useMemo(() => {
+    const waiting = pacientes.filter((patient) => patient.status === 'waiting').length;
+    const triaged = pacientes.filter((patient) => patient.status === 'triaged').length;
+    return { waiting, triaged };
+  }, [pacientes]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPatients();
+    }, [loadPatients])
+  );
 
   const handleLogout = () => {
     Alert.alert(
@@ -99,20 +128,28 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
     <View style={styles.patientCard}>
       <TouchableOpacity
         style={styles.patientPrimaryAction}
-        onPress={() => navigation.navigate('TriagemAvancada', { paciente: item })}
+        onPress={item.status === 'waiting' ? () => navigation.navigate('TriagemAvancada', { paciente: item }) : undefined}
+        disabled={item.status !== 'waiting'}
         accessible={true}
-        accessibilityLabel={`Paciente ${item.nome}, ${item.idade} anos. Toque para iniciar triagem.`}
+        accessibilityLabel={`Paciente ${item.nome}, ${item.idade} anos. ${item.status === 'waiting' ? 'Toque para iniciar triagem.' : 'Triagem já concluída.'}`}
       >
         <View style={styles.patientIcon}>
-          <Ionicons name="person-outline" size={30} color="#3498DB" />
+          <Ionicons name="person-outline" size={30} color={item.status === 'waiting' ? '#3498DB' : '#1E8449'} />
         </View>
         <View style={styles.patientInfo}>
-          <Text style={styles.patientName}>{item.nome}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.patientName}>{item.nome}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: STATUS_LABELS[item.status || 'waiting'].backgroundColor }]}>
+              <Text style={[styles.statusBadgeText, { color: STATUS_LABELS[item.status || 'waiting'].textColor }]}>
+                {STATUS_LABELS[item.status || 'waiting'].label}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.patientDetails}>
             {item.idade ?? '--'} anos • Senha: {item.senha ?? '--'} • Chegada: {formatArrivalTime(item.createdAt)}
           </Text>
         </View>
-        <Ionicons name="chevron-forward-outline" size={24} color="#BDC3C7" />
+        <Ionicons name={item.status === 'waiting' ? 'chevron-forward-outline' : 'checkmark-circle-outline'} size={24} color={item.status === 'waiting' ? '#BDC3C7' : '#1E8449'} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -139,9 +176,20 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryNumber}>{summary.waiting}</Text>
+          <Text style={styles.summaryLabel}>Aguardando</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryNumber}>{summary.triaged}</Text>
+          <Text style={styles.summaryLabel}>Triados</Text>
+        </View>
+      </View>
+
       {/* Seção da Lista de Pacientes (FlatList) */}
       <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Fila de Espera para Triagem</Text>
+        <Text style={styles.sectionTitle}>Fila de Espera e Triagem Realizada</Text>
         <FlatList
           data={pacientes}
           renderItem={renderItem}
@@ -183,6 +231,30 @@ const styles = StyleSheet.create({
     color: '#7F8C8D',
     marginTop: 4,
   },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    elevation: 2,
+  },
+  summaryNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+  },
+  summaryLabel: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#7F8C8D',
+  },
   sectionTitle: { 
     fontSize: 18, 
     fontWeight: '700', 
@@ -215,10 +287,25 @@ const styles = StyleSheet.create({
   patientInfo: { 
     flex: 1 
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   patientName: { 
     fontSize: 16, 
     fontWeight: 'bold', 
     color: '#2C3E50' 
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   patientDetails: { 
     fontSize: 14, 

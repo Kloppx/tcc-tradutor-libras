@@ -104,6 +104,17 @@ export async function deletePatient(patientId: string) {
   });
 }
 
+export async function getPatient(patientId: string) {
+  return request<{ patient: BackendPatient }>(`/api/patients/${patientId}`);
+}
+
+export async function updatePatient(patientId: string, payload: Record<string, unknown>) {
+  return request<{ patient: BackendPatient }>(`/api/patients/${patientId}`, {
+    method: 'PUT',
+    json: payload,
+  });
+}
+
 export async function getAttendancesHourly(windowHours = 6) {
   const query = `?window_hours=${encodeURIComponent(String(windowHours))}`;
   return request<{ windowHours: number; labels: string[]; values: number[]; generatedAt: string }>(

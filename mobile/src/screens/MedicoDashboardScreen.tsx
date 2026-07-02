@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
-import { listPatients } from '../services/api';
+import { listPatients, updatePatient } from '../services/api';
 
 type Props = RootStackScreenProps<'MedicoDashboard'>;
 
@@ -18,21 +18,20 @@ const RISK_PRIORITY: Record<NonNullable<PacienteTriagem['risco']>, number> = {
 
 export default function MedicoDashboardScreen({ navigation }: Props) {
   const [pacientes, setPacientes] = useState<PacienteTriagem[]>(PACIENTES_TRIADOS);
+  const [isCalling, setIsCalling] = useState(false);
+
+  const loadPatients = useCallback(async () => {
+    try {
+      const response = await listPatients('triaged');
+      setPacientes(response.patients as PacienteTriagem[]);
+    } catch {
+      setPacientes(PACIENTES_TRIADOS);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadPatients = async () => {
-      try {
-        const response = await listPatients('triaged');
-        if (response.patients.length > 0) {
-          setPacientes(response.patients as PacienteTriagem[]);
-        }
-      } catch {
-        setPacientes(PACIENTES_TRIADOS);
-      }
-    };
-
     loadPatients();
-  }, [pacientes]);
+  }, [loadPatients]);
 
   const pacientesOrdenados = useMemo(() => {
     return [...pacientes].sort((a, b) => {
@@ -41,7 +40,7 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
       if (prioridadeA !== prioridadeB) return prioridadeA - prioridadeB;
       return (a.senha || '').localeCompare(b.senha || '');
     });
-  }, []);
+  }, [pacientes]);
 
   const handleLogout = () => {
     Alert.alert('Sair', 'Deseja encerrar a sessão no consultório?', [
@@ -57,18 +56,36 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
     ]);
   };
 
-  const handleCallNext = () => {
+  const handleCallNext = async () => {
     const proximo = pacientesOrdenados[0];
     if (!proximo) {
       Toast.show({ type: 'info', text1: 'Fila vazia', text2: 'Não há pacientes aguardando consulta.' });
       return;
     }
 
-    Toast.show({
-      type: 'success',
-      text1: `Chamando: ${proximo.nome}`,
-      text2: `Senha ${proximo.senha} • Prioridade ${proximo.risco}`,
-    });
+    if (!proximo.id) {
+      Toast.show({ type: 'error', text1: 'Paciente inválido', text2: 'Não foi possível chamar este paciente.' });
+      return;
+    }
+
+    try {
+      setIsCalling(true);
+      await updatePatient(proximo.id, { status: 'called' });
+      Toast.show({
+        type: 'success',
+        text1: `Chamando: ${proximo.nome}`,
+        text2: `Senha ${proximo.senha} • Prioridade ${proximo.risco}`,
+      });
+      await loadPatients();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha ao chamar paciente',
+        text2: error instanceof Error ? error.message : 'Não foi possível atualizar o status.',
+      });
+    } finally {
+      setIsCalling(false);
+    }
   };
 
   const renderItem = ({ item }: { item: PacienteTriagem }) => {
@@ -105,9 +122,9 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
           <Text style={styles.summaryTitle}>Aguardando Consulta</Text>
           <Text style={styles.summaryCount}>{pacientesOrdenados.length} pacientes na fila</Text>
         </View>
-        <TouchableOpacity style={styles.callBtn} onPress={handleCallNext}>
+        <TouchableOpacity style={[styles.callBtn, isCalling && styles.callBtnDisabled]} onPress={handleCallNext} disabled={isCalling}>
           <Ionicons name="notifications-outline" size={20} color="#fff" />
-          <Text style={styles.callBtnText}>PRÓXIMO</Text>
+          <Text style={styles.callBtnText}>{isCalling ? 'CHAMANDO...' : 'PRÓXIMO'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -153,6 +170,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     elevation: 2,
+  },
+  callBtnDisabled: {
+    opacity: 0.7,
   },
   callBtnText: { color: '#fff', fontWeight: 'bold', marginLeft: 6, fontSize: 11 },
   card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 15, flexDirection: 'row', overflow: 'hidden', elevation: 3 },
