@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
-import { listPatients, updatePatient } from '../services/api';
+import { listPatients } from '../services/api';
 
 type Props = RootStackScreenProps<'MedicoDashboard'>;
 
@@ -29,9 +30,11 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
     }
   }, []);
 
-  useEffect(() => {
-    loadPatients();
-  }, [loadPatients]);
+  useFocusEffect(
+    useCallback(() => {
+      loadPatients();
+    }, [loadPatients])
+  );
 
   const pacientesOrdenados = useMemo(() => {
     return [...pacientes].sort((a, b) => {
@@ -68,24 +71,14 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
       return;
     }
 
-    try {
-      setIsCalling(true);
-      await updatePatient(proximo.id, { status: 'called' });
-      Toast.show({
-        type: 'success',
-        text1: `Chamando: ${proximo.nome}`,
-        text2: `Senha ${proximo.senha} • Prioridade ${proximo.risco}`,
-      });
-      await loadPatients();
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Falha ao chamar paciente',
-        text2: error instanceof Error ? error.message : 'Não foi possível atualizar o status.',
-      });
-    } finally {
-      setIsCalling(false);
-    }
+    setIsCalling(true);
+    Toast.show({
+      type: 'success',
+      text1: `Chamando: ${proximo.nome}`,
+      text2: 'Paciente encaminhado para a tela de atendimento.',
+    });
+    navigation.navigate('ProntuarioMedico', { paciente: proximo });
+    setIsCalling(false);
   };
 
   const renderItem = ({ item }: { item: PacienteTriagem }) => {

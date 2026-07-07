@@ -102,9 +102,31 @@ export default function TriagemAvancadaScreen({ route, navigation }: Props) {
     }
   }, [peso, altura]);
 
+  const normalizeRequiredValue = (value: string) => value.trim();
+
+  const buildMissingFieldsMessage = () => {
+    const missingFields: string[] = [];
+
+    if (!normalizeRequiredValue(peso)) missingFields.push('Peso');
+    if (!normalizeRequiredValue(altura)) missingFields.push('Altura');
+    if (!normalizeRequiredValue(temperatura)) missingFields.push('Temperatura');
+    if (!normalizeRequiredValue(pressao)) missingFields.push('PA');
+
+    if (missingFields.length === 0) {
+      return '';
+    }
+
+    return `Preencha: ${missingFields.join(', ')}.`;
+  };
+
   const handleSalvar = async () => {
-    if (!peso || !altura || !temperatura || !pressao) {
-      Toast.show({ type: 'error', text1: 'Dados Essenciais Faltando', text2: 'Peso, Altura, Temp. e PA são obrigatórios.' });
+    const missingFieldsMessage = buildMissingFieldsMessage();
+    if (missingFieldsMessage) {
+      Toast.show({
+        type: 'error',
+        text1: 'Dados essenciais faltando',
+        text2: missingFieldsMessage,
+      });
       return;
     }
 

@@ -20,8 +20,6 @@ export default function ProfissionalSignupScreen() {
   const [cargo, setCargo] = useState<'Enfermeiro' | 'Medico' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fieldsDisabled = !cargo;
-
   useEffect(() => {
     setConselho('');
   }, [cargo]);
@@ -117,48 +115,48 @@ export default function ProfissionalSignupScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.helperText}>Selecione Enfermagem ou Medicina para liberar os campos.</Text>
+            {!cargo ? (
+              <Text style={styles.helperText}>Selecione Enfermagem ou Medicina para continuar.</Text>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={nome}
+                  onChangeText={setNome}
+                  placeholder="Nome Completo"
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="E-mail institucional"
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={conselho}
+                  onChangeText={(text) => setConselho(formatCouncilNumber(text))}
+                  placeholder={cargo === 'Medico' ? 'CRM (ex: 123456-SP)' : 'COREN (ex: 123456-SP)'}
+                  placeholderTextColor="#888"
+                  autoCapitalize="characters"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={senha}
+                  onChangeText={setSenha}
+                  secureTextEntry
+                  placeholder="Crie uma senha"
+                  placeholderTextColor="#888"
+                />
 
-            <TextInput
-              style={[styles.input, fieldsDisabled && styles.inputDisabled]}
-              value={nome}
-              onChangeText={setNome}
-              placeholder="Nome Completo"
-              placeholderTextColor="#888"
-              editable={!fieldsDisabled}
-            />
-            <TextInput
-              style={[styles.input, fieldsDisabled && styles.inputDisabled]}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder="E-mail institucional"
-              placeholderTextColor="#888"
-              editable={!fieldsDisabled}
-            />
-            <TextInput
-              style={[styles.input, fieldsDisabled && styles.inputDisabled]}
-              value={conselho}
-              onChangeText={(text) => setConselho(formatCouncilNumber(text))}
-              placeholder={cargo === 'Medico' ? 'CRM (ex: 123456-SP)' : 'COREN (ex: 123456-SP)'}
-              placeholderTextColor="#888"
-              autoCapitalize="characters"
-              editable={!fieldsDisabled}
-            />
-            <TextInput
-              style={[styles.input, fieldsDisabled && styles.inputDisabled]}
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-              placeholder="Crie uma senha"
-              placeholderTextColor="#888"
-              editable={!fieldsDisabled}
-            />
-
-            <TouchableOpacity style={[styles.signupButton, (isLoading || fieldsDisabled) && styles.signupButtonDisabled]} onPress={handleSignup} disabled={isLoading || fieldsDisabled}>
-              <Text style={styles.signupButtonText}>{isLoading ? 'ENVIANDO...' : 'SOLICITAR ACESSO'}</Text>
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.signupButton} onPress={handleSignup} disabled={isLoading}>
+                  <Text style={styles.signupButtonText}>{isLoading ? 'ENVIANDO...' : 'SOLICITAR ACESSO'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -247,10 +245,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  inputDisabled: {
-    backgroundColor: '#EAECEE',
-    color: '#95A5A6',
-  },
   helperText: {
     fontSize: 13,
     color: '#6C7A89',
@@ -268,9 +262,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     shadowOffset: { height: 4, width: 0 },
-  },
-  signupButtonDisabled: {
-    opacity: 0.6,
   },
   signupButtonText: { 
     color: '#fff', 
