@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "libras-ana",
+    "slug": "libras-ana",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,24 +21,25 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "br.com.carloswgama.libras"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "4adce4df-52b0-4032-a56d-7f17851f902a"
-      }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/4adce4df-52b0-4032-a56d-7f17851f902a"
+      "url": "https://u.expo.dev/98c79413-0e16-46c7-bb84-3b6ab90aa1a7"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "98c79413-0e16-46c7-bb84-3b6ab90aa1a7"
+      }
+    }
   }
 }
