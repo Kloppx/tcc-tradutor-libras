@@ -15,24 +15,29 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
   
   const [opacity] = useState(new Animated.Value(1));
 
+  const loadStatus = async () => {
+    if (!pacienteId) {
+      return;
+    }
+
+    try {
+      setIsRefreshing(true);
+      const response = await getPatient(pacienteId);
+      setIsCalled(response.patient.status === 'called');
+    } catch {
+      setIsCalled(false);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const loadStatus = async () => {
-      if (!pacienteId) {
-        return;
-      }
-
-      try {
-        setIsRefreshing(true);
-        const response = await getPatient(pacienteId);
-        setIsCalled(response.patient.status === 'called');
-      } catch {
-        setIsCalled(false);
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-
     loadStatus();
+    const intervalId = setInterval(() => {
+      loadStatus();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, [pacienteId]);
 
   useEffect(() => {
@@ -91,15 +96,7 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
         {pacienteId && (
           <TouchableOpacity
             style={styles.refreshButton}
-            onPress={async () => {
-              try {
-                setIsRefreshing(true);
-                const response = await getPatient(pacienteId);
-                setIsCalled(response.patient.status === 'called');
-              } finally {
-                setIsRefreshing(false);
-              }
-            }}
+            onPress={loadStatus}
             accessibilityLabel="Atualizar status da chamada"
           >
             <Ionicons name="refresh-outline" size={18} color="#fff" />
