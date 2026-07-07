@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -18,10 +18,18 @@ export const HealthHeader = ({ title }: { title: string }) => (
 // Botão Flutuante de Libras (Com Hint e Label descritivo)
 export const LibrasFAB = () => {
   const navigation = useNavigation<any>();
+  // ---------------------------------------
+  const handleButton = async () => {
+    Alert.alert("Recurso indisponivel no momento");
+
+
+    //navigation.navigate('RealTimeTranslation')
+  }
+  // --------------------------------------
   return (
     <TouchableOpacity 
       style={styles.fab} 
-      onPress={() => navigation.navigate('RealTimeTranslation')}
+      onPress={handleButton}
       accessible={true}
       accessibilityRole="button"
       accessibilityLabel="Ativar tradução em Libras"
