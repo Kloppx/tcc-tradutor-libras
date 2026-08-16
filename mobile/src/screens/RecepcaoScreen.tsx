@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import MaskInput from 'react-native-mask-input';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
+import LibrasVideoButton from '../components/LibrasVideoButton';
 import { listPatients } from '../services/api';
 
 type Props = RootStackScreenProps<'Recepcao'>;
@@ -81,58 +82,91 @@ export default function RecepcaoScreen({ navigation }: Props) {
         <View style={styles.header}>
           <Ionicons name="medkit-outline" size={60} color="#1E88E5" />
           <Text style={styles.title}>Autoatendimento</Text>
-          <Text style={styles.subtitle}>Selecione uma opção para iniciar sua triagem.</Text>
+          <View style={styles.subtitleRow}>
+            <Text style={styles.subtitle}>Selecione uma opção para iniciar sua triagem.</Text>
+            <View style={styles.subtitleLibrasButton}>
+              <LibrasVideoButton
+                title="Selecione uma opção"
+                description="Orientação em Libras para selecionar uma opção de atendimento."
+                videoSource={require('../../assets/videos/recepcao/selecione_opcao.mp4')}
+              />
+            </View>
+          </View>
         </View>
 
         {/* OPÇÃO 1: NOVO CADASTRO */}
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={() => navigation.navigate('PacienteCadastro')}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Primeiro atendimento"
-          accessibilityHint="Abre o cadastro completo para novo paciente"
-        >
-          <Ionicons name="person-add-outline" size={40} color="#27AE60" />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardTitle}>Primeiro Atendimento</Text>
-            <Text style={styles.cardDesc}>Crie seu cadastro e inicie a triagem.</Text>
+        <View style={styles.cardWrapper}>
+          <TouchableOpacity 
+            style={styles.card} 
+            onPress={() => navigation.navigate('PacienteCadastro')}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Primeiro atendimento"
+            accessibilityHint="Abre o cadastro completo para novo paciente"
+          >
+            <Ionicons name="person-add-outline" size={40} color="#27AE60" />
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardTitle}>Primeiro Atendimento</Text>
+              <Text style={styles.cardDesc}>Crie seu cadastro e inicie a triagem.</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.cardLibrasButton}>
+            <LibrasVideoButton
+              title="Primeiro Atendimento"
+              description="Explicação em Libras sobre o primeiro atendimento e o cadastro de paciente."
+              videoSource={require('../../assets/videos/recepcao/primeiro_atendimento.mp4')}
+            />
           </View>
-          <Ionicons name="chevron-forward-outline" size={24} color="#BDBDBD" />
-        </TouchableOpacity>
+        </View>
 
         {/* OPÇÃO 2: JÁ TEM CADASTRO */}
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={handleExistingPatient}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Já tenho cadastro"
-          accessibilityHint="Abre identificação por CPF ou Cartão SUS"
-        >
-          <Ionicons name="id-card-outline" size={40} color="#2980B9" />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardTitle}>Já Tenho Cadastro</Text>
-            <Text style={styles.cardDesc}>Use seu CPF ou Cartão SUS para continuar.</Text>
+        <View style={styles.cardWrapper}>
+          <TouchableOpacity 
+            style={styles.card} 
+            onPress={handleExistingPatient}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Já tenho cadastro"
+            accessibilityHint="Abre identificação por CPF ou Cartão SUS"
+          >
+            <Ionicons name="id-card-outline" size={40} color="#2980B9" />
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardTitle}>Já Tenho Cadastro</Text>
+              <Text style={styles.cardDesc}>Use seu CPF ou Cartão SUS para continuar.</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.cardLibrasButton}>
+            <LibrasVideoButton
+              title="Já Tenho Cadastro"
+              description="Explicação em Libras para pacientes que já possuem cadastro."
+              videoSource={require('../../assets/videos/recepcao/tenho_cadastro.mp4')}
+            />
           </View>
-          <Ionicons name="chevron-forward-outline" size={24} color="#BDBDBD" />
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate('Anamnese')}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Anamnese guiada"
-          accessibilityHint="Abre a etapa de identificação e queixa principal"
-        >
-          <Ionicons name="clipboard-outline" size={40} color="#8E44AD" />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardTitle}>Anamnese Guiada</Text>
-            <Text style={styles.cardDesc}>Fluxo assistido de identificação e sintomas.</Text>
+        <View style={styles.cardWrapper}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('Anamnese')}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Anamnese guiada"
+            accessibilityHint="Abre a etapa de identificação e queixa principal"
+          >
+            <Ionicons name="clipboard-outline" size={40} color="#8E44AD" />
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardTitle}>Anamnese Guiada</Text>
+              <Text style={styles.cardDesc}>Fluxo assistido de identificação e sintomas.</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.cardLibrasButton}>
+            <LibrasVideoButton
+              title="Anamnese Guiada"
+              description="Explicação em Libras sobre o fluxo de anamnese guiada."
+              videoSource={require('../../assets/videos/recepcao/anamnese_guiada.mp4')}
+            />
           </View>
-          <Ionicons name="chevron-forward-outline" size={24} color="#BDBDBD" />
-        </TouchableOpacity>
+        </View>
       </View>
 
       <Modal visible={showLookupModal} transparent animationType="fade" onRequestClose={() => setShowLookupModal(false)}>
@@ -210,11 +244,22 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   subtitle: { 
+    width: '100%',
     fontSize: 17, 
     color: '#5A7896', 
-    marginTop: 8,
     textAlign: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 52,
+  },
+  subtitleRow: {
+    position: 'relative',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  subtitleLibrasButton: {
+    position: 'absolute',
+    right: 4,
   },
   card: { 
     backgroundColor: '#fff', 
@@ -222,12 +267,23 @@ const styles = StyleSheet.create({
     padding: 20, 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 20,
+    paddingRight: 72,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+  },
+  cardWrapper: {
+    position: 'relative',
+    marginBottom: 20,
+  },
+  cardLibrasButton: {
+    position: 'absolute',
+    top: '50%',
+    right: 15,
+    zIndex: 2,
+    transform: [{ translateY: -21 }],
   },
   cardTextContainer: {
     marginLeft: 15,
