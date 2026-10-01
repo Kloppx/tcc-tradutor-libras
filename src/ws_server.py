@@ -179,17 +179,31 @@ async def predict_video(file: UploadFile = File(...)):
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
             for i in idxs:
                 img = frames[int(i)]
+                h, w = img.shape[:2]
+                if w > 480:
+                    scale = 480.0 / w
+                    img = cv2.resize(img, (480, int(h * scale)))
                 kp = extract_keypoints_from_image(img, holistic)
                 kp_sequence.append(kp)
 
         seq_arr = np.expand_dims(np.array(kp_sequence), axis=0)
         # run prediction
         try:
-            res = model.predict(seq_arr, 0)
+            res = model.predict(seq_arr, verbose=0)
             probs = res[0]
             best_idx = int(np.argmax(probs))
             conf = float(probs[best_idx])
-            return {"status": "predicted", "word": class_names[best_idx] if class_names else str(best_idx), "confidence": conf}
+            top_indices = np.argsort(probs)[::-1][:3]
+            top3 = [
+                {"word": class_names[idx] if class_names else str(idx), "confidence": float(probs[idx])}
+                for idx in top_indices
+            ]
+            return {
+                "status": "predicted",
+                "word": class_names[best_idx] if class_names else str(best_idx),
+                "confidence": conf,
+                "top3": top3
+            }
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
@@ -306,3 +320,9 @@ async def websocket_predict(websocket: WebSocket):
             except Exception:
                 pass
             manager.disconnect(websocket)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("src.ws_server:app", host="0.0.0.0", port=8000)
+
