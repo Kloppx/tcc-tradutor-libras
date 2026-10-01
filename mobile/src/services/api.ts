@@ -135,3 +135,33 @@ export async function finalizeClinicalNote(patientId: string, payload: Record<st
     json: payload,
   });
 }
+
+export type PredictVideoResult = {
+  status: 'predicted' | 'error';
+  word?: string;
+  confidence?: number;
+  message?: string;
+  top3?: Array<{ word: string; confidence: number }>;
+};
+
+export async function predictVideo(videoUri: string): Promise<PredictVideoResult> {
+  const formData = new FormData();
+  const filename = videoUri.split('/').pop() || 'libras_sinal.mp4';
+
+  formData.append('file', {
+    uri: videoUri,
+    name: filename,
+    type: 'video/mp4',
+  } as any);
+
+  const response = await fetch(`${API_BASE_URL}/predict_video`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+export { API_BASE_URL };
+
