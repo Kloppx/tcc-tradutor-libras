@@ -31,6 +31,8 @@ export default function VideoTranslationScreen() {
   const navigation = useNavigation<any>();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [prepCountdown, setPrepCountdown] = useState(5);
   const [isRecording, setIsRecording] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -38,12 +40,17 @@ export default function VideoTranslationScreen() {
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
 
   const cameraRef = useRef<CameraView>(null);
+  const prepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const serverLabel = API_BASE_URL.replace(/^https?:\/\//, '');
 
   useEffect(() => {
     checkServerHealth();
+    return () => {
+      if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    };
   }, []);
 
   const checkServerHealth = async () => {
@@ -55,10 +62,37 @@ export default function VideoTranslationScreen() {
     }
   };
 
-  const startRecording = async () => {
-    if (!cameraRef.current || isRecording || isAnalyzing) return;
+  const startPreparationFlow = () => {
+    if (!cameraRef.current || isRecording || isAnalyzing || isPreparing) return;
 
     setPrediction(null);
+    setIsPreparing(true);
+    setPrepCountdown(5);
+
+    let currentPrep = 5;
+    if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+
+    prepTimerRef.current = setInterval(() => {
+      currentPrep -= 1;
+      if (currentPrep <= 0) {
+        if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+        setIsPreparing(false);
+        startActualRecording();
+      } else {
+        setPrepCountdown(currentPrep);
+      }
+    }, 1000);
+  };
+
+  const cancelPreparation = () => {
+    if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+    setIsPreparing(false);
+    setPrepCountdown(5);
+  };
+
+  const startActualRecording = async () => {
+    if (!cameraRef.current || isRecording || isAnalyzing) return;
+
     setIsRecording(true);
     setCountdown(3);
 
@@ -140,11 +174,11 @@ export default function VideoTranslationScreen() {
       }
     } catch (err: any) {
       console.error('Erro ao analisar vídeo:', err);
-      checkServerHealth();
+      setServerOnline(false);
       Toast.show({
         type: 'error',
-        text1: 'Falha no envio do vídeo',
-        text2: err?.message || `Verifique se o backend Python está ativo em ${serverLabel}.`,
+        text1: 'Servidor desconectado',
+        text2: `Inicie o backend Python em ${serverLabel}.`,
       });
     } finally {
       setIsAnalyzing(false);
@@ -227,13 +261,42 @@ export default function VideoTranslationScreen() {
         {/* Guia de enquadramento pontilhado */}
         {!prediction && !isAnalyzing && (
           <View style={styles.guideContainer} pointerEvents="none">
-            <View style={[styles.guideBox, isRecording && styles.guideBoxRecording]}>
-              <Text style={styles.guideText}>
+            <View
+              style={[
+                styles.guideBox,
+                isRecording && styles.guideBoxRecording,
+                isPreparing && styles.guideBoxPreparing,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.guideText,
+                  isRecording && styles.guideTextRecording,
+                  isPreparing && styles.guideTextPreparing,
+                ]}
+              >
                 {isRecording
-                  ? `Gravando sinal... ${countdown}s`
+                  ? `🔴 Gravando sinal agora... ${countdown}s`
+                  : isPreparing
+                  ? `⏳ Prepare-se na câmera! ${prepCountdown}s`
                   : 'Enquadre tronco e mãos no quadro'}
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Overlay central de contagem regressiva para se ajeitar */}
+        {isPreparing && (
+          <View style={styles.prepCenterContainer} pointerEvents="box-none">
+            <View style={styles.prepBadge}>
+              <Text style={styles.prepBadgeSubtitle}>PREPARE-SE</Text>
+              <Text style={styles.prepBadgeNumber}>{prepCountdown}</Text>
+              <Text style={styles.prepBadgeTip}>Ajeite tronco e mãos na câmera</Text>
+            </View>
+            <TouchableOpacity style={styles.cancelPrepBtn} onPress={cancelPreparation}>
+              <Ionicons name="close-circle-outline" size={20} color="#fff" />
+              <Text style={styles.cancelPrepBtnText}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -356,22 +419,35 @@ export default function VideoTranslationScreen() {
                   <View style={styles.recordingStopSquare} />
                   <Text style={styles.recordingCountdownText}>{countdown}s</Text>
                 </TouchableOpacity>
+              ) : isPreparing ? (
+                <TouchableOpacity
+                  style={styles.prepBtnActive}
+                  onPress={cancelPreparation}
+                  accessibilityLabel="Cancelar contagem regressiva"
+                >
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={styles.prepBtnText}>Cancelar ({prepCountdown}s)</Text>
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={styles.recordBtn}
-                  onPress={startRecording}
-                  accessibilityLabel="Gravar Vídeo de 3 segundos"
+                  onPress={startPreparationFlow}
+                  accessibilityLabel="Iniciar gravação com temporizador de 5 segundos"
                 >
                   <View style={styles.recordBtnInner}>
-                    <Ionicons name="videocam" size={28} color="#fff" />
+                    <Ionicons name="timer-outline" size={32} color="#fff" />
                   </View>
-                  <Text style={styles.recordBtnLabel}>GRAVAR SINAL (3s)</Text>
+                  <Text style={styles.recordBtnLabel}>GRAVAR COM TIMER (5s)</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <Text style={styles.instructionsText}>
-              Toque no botão e execute o sinal durante os 3 segundos.
+              {isPreparing
+                ? `Ajeite-se! A gravação de 3 segundos começa em ${prepCountdown}s...`
+                : isRecording
+                ? '🔴 Faça o sinal de Libras de forma clara agora!'
+                : 'Toque para iniciar: você terá 5s para se ajeitar antes da gravação.'}
             </Text>
           </View>
         )}
@@ -469,6 +545,12 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     backgroundColor: 'rgba(239, 68, 68, 0.08)',
   },
+  guideBoxPreparing: {
+    borderColor: '#F59E0B',
+    borderStyle: 'dashed',
+    borderWidth: 3,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  },
   guideText: {
     color: '#fff',
     fontSize: 13,
@@ -478,6 +560,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     textAlign: 'center',
+  },
+  guideTextRecording: {
+    backgroundColor: 'rgba(220, 38, 38, 0.85)',
+    fontWeight: 'bold',
+  },
+  guideTextPreparing: {
+    backgroundColor: 'rgba(217, 119, 6, 0.9)',
+    fontWeight: 'bold',
+    color: '#FEF3C7',
   },
   bottomControls: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -541,6 +632,84 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   recordingCountdownText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  prepBtnActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#D97706',
+    paddingHorizontal: 28,
+    paddingVertical: 18,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    elevation: 8,
+  },
+  prepBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  prepCenterContainer: {
+    position: 'absolute',
+    top: '28%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 40,
+  },
+  prepBadge: {
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    borderWidth: 4,
+    borderColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  prepBadgeSubtitle: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  prepBadgeNumber: {
+    color: '#fff',
+    fontSize: 64,
+    fontWeight: '900',
+    lineHeight: 70,
+  },
+  prepBadgeTip: {
+    color: '#CBD5E1',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  cancelPrepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    elevation: 6,
+  },
+  cancelPrepBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   instructionsText: {
     color: '#94A3B8',
     fontSize: 12,
