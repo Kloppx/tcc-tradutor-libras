@@ -140,11 +140,11 @@ export default function VideoTranslationScreen() {
       }
     } catch (err: any) {
       console.error('Erro ao analisar vídeo:', err);
-      setServerOnline(false);
+      checkServerHealth();
       Toast.show({
         type: 'error',
-        text1: 'Servidor desconectado',
-        text2: `Inicie o backend Python em ${serverLabel}.`,
+        text1: 'Falha no envio do vídeo',
+        text2: err?.message || `Verifique se o backend Python está ativo em ${serverLabel}.`,
       });
     } finally {
       setIsAnalyzing(false);
