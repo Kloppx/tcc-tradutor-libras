@@ -189,8 +189,25 @@ async def predict_video(file: UploadFile = File(...)):
             probs = res[0]
             best_idx = int(np.argmax(probs))
             conf = float(probs[best_idx])
-            return {"status": "predicted", "word": class_names[best_idx] if class_names else str(best_idx), "confidence": conf}
+            word = class_names[best_idx] if class_names else str(best_idx)
+
+            # Log top 3 no terminal para acompanhamento
+            top3_idx = np.argsort(probs)[-3:][::-1]
+            top3_info = ", ".join([f"{class_names[i]}: {probs[i]*100:.1f}%" for i in top3_idx])
+            top3_list = [{"word": class_names[i], "confidence": float(probs[i])} for i in top3_idx]
+            print(f"\n==========================================", flush=True)
+            print(f"[IA Predição] -> {word.upper()} ({conf*100:.1f}%)", flush=True)
+            print(f"[Top 3 Candidatos] -> {top3_info}", flush=True)
+            print(f"==========================================\n", flush=True)
+
+            return {
+                "status": "predicted",
+                "word": word,
+                "confidence": conf,
+                "top3": top3_list
+            }
         except Exception as e:
+            print(f"[IA Erro] Falha na predição: {e}", flush=True)
             return {"status": "error", "message": str(e)}
 
     finally:
