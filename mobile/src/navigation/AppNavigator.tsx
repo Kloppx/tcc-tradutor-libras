@@ -33,7 +33,7 @@ import TriagemAvancadaScreen from '../screens/TriagemAvancadaScreen';
 
 // 5. Telas Comuns e Auxiliares
 import HomeScreen from '../screens/HomeScreen';
-import RealTimeTranslationScreen from '../screens/RealTimeTranslationScreen';
+import VideoTranslationScreen from '../screens/VideoTranslationScreen';
 import ProfissionalScreen from '../screens/ProfissionalScreen';
 import RecursosNativosScreen from '../screens/RecursosNativosScreen';
 
@@ -61,7 +61,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Início" component={HomeScreen} />
-      <Tab.Screen name="Tradutor" component={RealTimeTranslationScreen} />
+      <Tab.Screen name="Tradutor" component={VideoTranslationScreen} />
       <Tab.Screen name="Recursos" component={RecursosNativosScreen} />
       <Tab.Screen name="Profissional" component={ProfissionalScreen} />
     </Tab.Navigator>
@@ -94,7 +94,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ProcedimentosEnfermagem" component={ProcedimentosEnfermagemScreen} />
         <Stack.Screen name="TriagemAvancada" component={TriagemAvancadaScreen} />
         
-        <Stack.Screen name="RealTimeTranslation" component={RealTimeTranslationScreen} />
+        <Stack.Screen name="RealTimeTranslation" component={VideoTranslationScreen} />
 
       </Stack.Navigator>
       <Toast />
