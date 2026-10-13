@@ -1,0 +1,9 @@
+{
+  "temperature": 2.297775,
+  "confidence_threshold": 0.67,
+  "margin_threshold": 0.15,
+  "validation_accuracy": 0.857143,
+  "validation_accepted_accuracy": 0.909091,
+  "validation_coverage": 0.857143,
+  "target_precision": 0.9
+}

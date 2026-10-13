@@ -1,7 +1,11 @@
 import os
 import numpy as np
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+try:
+    from .landmark_pipeline import prepare_sequence
+except ImportError:
+    from landmark_pipeline import prepare_sequence
 
 # --- CONFIGURAÇÕES ---
 DATA_PATH = os.path.join('data', 'features')
@@ -66,8 +70,11 @@ def load_split_data(split, actions, max_length):
         for file_name in files:
             res = np.load(os.path.join(action_path, file_name))
 
-            if len(res) > max_length:
-                res = res[:max_length]
+            try:
+                res = prepare_sequence(res, target_length=max_length)
+            except ValueError as exc:
+                print(f"   AVISO: ignorando {file_name}: {exc}")
+                continue
 
             sequences.append(res)
             labels.append(action_idx)
@@ -75,7 +82,7 @@ def load_split_data(split, actions, max_length):
     if not sequences:
         return np.empty((0, max_length, feature_dim), dtype='float32'), np.empty((0, len(actions)), dtype='int32')
 
-    X = pad_sequences(sequences, maxlen=max_length, padding='post', dtype='float32')
+    X = np.asarray(sequences, dtype='float32')
     y = to_categorical(labels, num_classes=len(actions)).astype(int)
     return X, y
 

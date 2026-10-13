@@ -1,12 +1,18 @@
 import cv2
 import numpy as np
 import os
+import time
 import mediapipe as mp
 # Correção para o TF 2.15
 from tensorflow.keras.models import load_model 
 
+try:
+    from .landmark_pipeline import prepare_sequence
+except ImportError:
+    from landmark_pipeline import prepare_sequence
+
 # --- CONFIGURAÇÕES ---
-PATH_MODEL = os.path.join('models', 'modelo_final.h5') 
+PATH_MODEL = os.path.join('models', 'melhor_modelo_v2.keras')
 PATH_LABELS = os.path.join('models', 'label_encoder.npy')
 
 # Configuração do MediaPipe
@@ -87,11 +93,14 @@ def main():
             
             # 4. Lógica de Predição
             keypoints = extract_keypoints(results)
-            sequence.append(keypoints)
-            sequence = sequence[-input_shape:]
+            now = time.monotonic()
+            sequence.append((now, keypoints))
+            sequence = [item for item in sequence if now - item[0] <= 3.0]
             
-            if len(sequence) == input_shape:
-                res = model.predict(np.expand_dims(sequence, axis=0), verbose=0)[0]
+            window_duration = sequence[-1][0] - sequence[0][0] if len(sequence) > 1 else 0.0
+            if len(sequence) >= 12 and window_duration >= 2.4:
+                prepared = prepare_sequence([item[1] for item in sequence], input_shape)
+                res = model.predict(np.expand_dims(prepared, axis=0), verbose=0)[0]
                 
                 # Visualização (Barras)
                 image = prob_viz(res, actions, image, colors)
@@ -100,7 +109,7 @@ def main():
                 predictions.append(best_class_index)
                 
                 # Estabilidade (últimos 10 frames iguais)
-                if np.unique(predictions[-10:])[0] == best_class_index:
+                if len(predictions) >= 3 and len(set(predictions[-3:])) == 1:
                     if res[best_class_index] > threshold:
                         current_action = actions[best_class_index]
                         if len(sentence) > 0:
@@ -118,8 +127,8 @@ def main():
             cv2.putText(image, ' '.join(sentence), (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
             
             # Status do Buffer (Texto em PRETO agora)
-            if len(sequence) < input_shape:
-                cv2.putText(image, f"Carregando: {len(sequence)}/{input_shape}", (120, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+            if len(sequence) < 12 or window_duration < 2.4:
+                cv2.putText(image, "Preparando janela de 3 segundos...", (80, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
 
             cv2.imshow('Tradutor Libras (Real Time)', image)
 

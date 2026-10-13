@@ -28,30 +28,21 @@ def wait_for_trimming():
 def run_pipeline():
     """Executa o pipeline completo"""
     steps = [
-        ("feature_extraction", "Extraindo features MediaPipe..."),
-        ("preprocess_data", "Pré-processando dados..."),
-        ("model_training", "Treinando modelo..."),
-        ("evaluate_model", "Avaliando modelo..."),
+        ([sys.executable, "src/feature_extraction.py", "--raw-root", "dataset/trimmed/raw", "--export-root", "data/features"], "Extraindo features MediaPipe..."),
+        ([sys.executable, "src/preprocess_data.py"], "Pré-processando e normalizando dados..."),
+        ([sys.executable, "src/train_v2.py"], "Treinando modelo v2..."),
+        ([sys.executable, "scripts/calibrate_model.py"], "Calibrando confiança do modelo..."),
+        ([sys.executable, "scripts/evaluate_model.py", "--model-path", "models/melhor_modelo_v2.keras", "--report-dir", "reports/v2"], "Avaliando modelo v2..."),
     ]
     
-    for script_name, message in steps:
+    for cmd, message in steps:
         print(f"\n🔄 {message}")
         print("=" * 60)
-        
-        if script_name == "evaluate_model":
-            script_path = f"scripts/{script_name}.py"
-        else:
-            script_path = f"src/{script_name}.py"
-        
-        if script_name == "feature_extraction":
-            cmd = [sys.executable, script_path, "--raw-root", "dataset/trimmed/raw", "--export-root", "data/features"]
-        else:
-            cmd = [sys.executable, script_path]
-        
+
         result = subprocess.run(cmd, cwd=".")
         
         if result.returncode != 0:
-            print(f"\n❌ Erro em {script_name}")
+            print(f"\n❌ Erro ao executar: {' '.join(cmd)}")
             return False
     
     return True

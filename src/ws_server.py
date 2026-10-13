@@ -14,6 +14,7 @@ import asyncio
 import base64
 import json
 import os
+import time
 from typing import Dict, List
 
 import cv2
@@ -27,17 +28,25 @@ from tensorflow.keras.models import load_model
 
 try:
     from .backend_api import router as api_router
+    from .landmark_pipeline import prepare_sequence, sequence_detection_quality
 except ImportError:
     from backend_api import router as api_router
+    from landmark_pipeline import prepare_sequence, sequence_detection_quality
 
 
 # --- Config ---
 MODEL_PATHS = [
-    os.path.join('models', 'melhor_modelo.keras'),
-    os.path.join('models', 'modelo_final.h5'),
+    os.path.join('models', 'melhor_modelo_v2.keras'),
+    os.path.join('models', 'modelo_final_v2.h5'),
 ]
 LABELS_PATH = os.path.join('models', 'label_encoder.npy')
+INFERENCE_CONFIG_PATH = os.path.join('models', 'inference_config_v2.json')
 DEFAULT_THRESHOLD = 0.75
+DEFAULT_MARGIN = 0.15
+TEMPERATURE = 1.0
+MIN_HAND_DETECTION_RATIO = 0.35
+REALTIME_WINDOW_SECONDS = 3.0
+MIN_REALTIME_FRAMES = 12
 
 
 app = FastAPI()
@@ -48,18 +57,21 @@ mp_holistic = mp.solutions.holistic
 
 
 def load_artifacts():
+    global DEFAULT_THRESHOLD, DEFAULT_MARGIN, TEMPERATURE
     model = None
+    loaded_path = None
     for p in MODEL_PATHS:
         if os.path.exists(p):
             try:
                 model = load_model(p)
+                loaded_path = p
                 print(f"Loaded model: {p}")
                 break
             except Exception as e:
                 print(f"Failed to load model {p}: {e}")
 
     if model is None:
-        raise FileNotFoundError("No model found in models/ (tried melhor_modelo.keras and modelo_final.h5)")
+        raise FileNotFoundError("Modelo v2 não encontrado em models/. Execute src/train_v2.py.")
 
     if os.path.exists(LABELS_PATH):
         labels = np.load(LABELS_PATH, allow_pickle=True).item()
@@ -70,6 +82,16 @@ def load_artifacts():
             class_names = list(labels)
     else:
         class_names = None
+
+    if loaded_path and loaded_path.endswith('melhor_modelo_v2.keras') and os.path.exists(INFERENCE_CONFIG_PATH):
+        try:
+            with open(INFERENCE_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
+                inference_config = json.load(config_file)
+            TEMPERATURE = float(inference_config.get('temperature', TEMPERATURE))
+            DEFAULT_THRESHOLD = float(inference_config.get('confidence_threshold', DEFAULT_THRESHOLD))
+            DEFAULT_MARGIN = float(inference_config.get('margin_threshold', DEFAULT_MARGIN))
+        except (OSError, ValueError, TypeError) as exc:
+            print(f"Failed to load inference config: {exc}")
 
     # infer input length
     try:
@@ -99,6 +121,64 @@ def extract_keypoints_from_image(image, holistic):
     lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
     rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
     return np.concatenate([pose, lh, rh])
+
+
+def prediction_response(probs, class_names):
+    """Build a prediction response with uncertainty rejection and top-3."""
+    probabilities = np.clip(np.asarray(probs, dtype=np.float32), 1e-7, 1.0)
+    if TEMPERATURE != 1.0:
+        logits = np.log(probabilities) / TEMPERATURE
+        logits -= np.max(logits)
+        probabilities = np.exp(logits)
+        probabilities /= np.sum(probabilities)
+    order = np.argsort(probabilities)[::-1]
+    best_idx = int(order[0])
+    confidence = float(probabilities[best_idx])
+    second_confidence = float(probabilities[order[1]]) if len(order) > 1 else 0.0
+    margin = confidence - second_confidence
+
+    def class_name(index):
+        return class_names[index] if class_names else str(index)
+
+    top3 = [
+        {"word": class_name(int(index)), "confidence": float(probabilities[index])}
+        for index in order[:3]
+    ]
+    accepted = confidence >= DEFAULT_THRESHOLD and margin >= DEFAULT_MARGIN
+
+    if not accepted:
+        return {
+            "status": "uncertain",
+            "message": "Sinal não reconhecido com segurança. Tente novamente.",
+            "word": None,
+            "confidence": confidence,
+            "margin": margin,
+            "top3": top3,
+        }
+
+    return {
+        "status": "predicted",
+        "word": class_name(best_idx),
+        "confidence": confidence,
+        "margin": margin,
+        "top3": top3,
+    }
+
+
+def prepare_detected_sequence(keypoints, seq_len):
+    raw_sequence = np.asarray(keypoints, dtype=np.float32)
+    quality = sequence_detection_quality(raw_sequence)
+    if quality["hand_ratio"] < MIN_HAND_DETECTION_RATIO:
+        return None, quality
+    return prepare_sequence(raw_sequence, target_length=seq_len), quality
+
+
+def uniform_sample(items, target_length):
+    """Sample the complete recording without decoding landmarks unnecessarily."""
+    if len(items) <= target_length:
+        return items
+    indices = np.rint(np.linspace(0, len(items) - 1, target_length)).astype(np.int32)
+    return [items[int(index)] for index in indices]
 
 
 class ConnectionManager:
@@ -168,46 +248,38 @@ async def predict_video(file: UploadFile = File(...)):
         if len(frames) == 0:
             return {"status": "error", "message": "no_frames"}
 
-        # sample seq_len frames evenly
-        if len(frames) >= seq_len:
-            idxs = np.linspace(0, len(frames) - 1, seq_len).astype(int)
-        else:
-            # if fewer frames, repeat last frame to reach seq_len
-            idxs = list(range(len(frames))) + [len(frames) - 1] * (seq_len - len(frames))
-
+        selected_frames = uniform_sample(frames, seq_len)
         kp_sequence = []
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            for i in idxs:
-                img = frames[int(i)]
+            for img in selected_frames:
                 kp = extract_keypoints_from_image(img, holistic)
                 kp_sequence.append(kp)
 
-        seq_arr = np.expand_dims(np.array(kp_sequence), axis=0)
+        prepared, quality = prepare_detected_sequence(kp_sequence, seq_len)
+        if prepared is None:
+            return {
+                "status": "uncertain",
+                "message": "As mãos não ficaram visíveis durante tempo suficiente.",
+                "quality": quality,
+            }
+
+        seq_arr = np.expand_dims(prepared, axis=0)
         # run prediction
         try:
             res = model.predict(seq_arr, 0)
-            probs = res[0]
-            best_idx = int(np.argmax(probs))
-            conf = float(probs[best_idx])
-            word = class_names[best_idx] if class_names else str(best_idx)
-
-            # Log top 3 no terminal para acompanhamento
-            top3_idx = np.argsort(probs)[-3:][::-1]
-            top3_info = ", ".join([f"{class_names[i]}: {probs[i]*100:.1f}%" for i in top3_idx])
-            top3_list = [{"word": class_names[i], "confidence": float(probs[i])} for i in top3_idx]
-            print(f"\n==========================================", flush=True)
-            print(f"[IA Predição] -> {word.upper()} ({conf*100:.1f}%)", flush=True)
-            print(f"[Top 3 Candidatos] -> {top3_info}", flush=True)
-            print(f"==========================================\n", flush=True)
-
-            return {
-                "status": "predicted",
-                "word": word,
-                "confidence": conf,
-                "top3": top3_list
-            }
+            response = prediction_response(res[0], class_names)
+            response["quality"] = quality
+            top3_info = ", ".join(
+                f"{item['word']}: {item['confidence'] * 100:.1f}%"
+                for item in response.get("top3", [])
+            )
+            print(
+                f"[IA] status={response['status']} palavra={response.get('word')} "
+                f"confiança={response.get('confidence', 0) * 100:.1f}% | {top3_info}",
+                flush=True,
+            )
+            return response
         except Exception as e:
-            print(f"[IA Erro] Falha na predição: {e}", flush=True)
             return {"status": "error", "message": str(e)}
 
     finally:
@@ -239,25 +311,27 @@ async def predict_frames(payload: Dict):
     if len(imgs) == 0:
         return {"status": "error", "message": "invalid_frames"}
 
-    # sample or pad to seq_len
-    if len(imgs) >= seq_len:
-        idxs = np.linspace(0, len(imgs) - 1, seq_len).astype(int)
-    else:
-        idxs = list(range(len(imgs))) + [len(imgs) - 1] * (seq_len - len(imgs))
-
+    selected_images = uniform_sample(imgs, seq_len)
     kp_sequence = []
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        for i in idxs:
-            kp = extract_keypoints_from_image(imgs[int(i)], holistic)
+        for img in selected_images:
+            kp = extract_keypoints_from_image(img, holistic)
             kp_sequence.append(kp)
 
-    seq_arr = np.expand_dims(np.array(kp_sequence), axis=0)
+    prepared, quality = prepare_detected_sequence(kp_sequence, seq_len)
+    if prepared is None:
+        return {
+            "status": "uncertain",
+            "message": "As mãos não ficaram visíveis durante tempo suficiente.",
+            "quality": quality,
+        }
+
+    seq_arr = np.expand_dims(prepared, axis=0)
     try:
         res = model.predict(seq_arr, 0)
-        probs = res[0]
-        best_idx = int(np.argmax(probs))
-        conf = float(probs[best_idx])
-        return {"status": "predicted", "word": class_names[best_idx] if class_names else str(best_idx), "confidence": conf}
+        response = prediction_response(res[0], class_names)
+        response["quality"] = quality
+        return response
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -266,8 +340,8 @@ async def predict_frames(payload: Dict):
 async def websocket_predict(websocket: WebSocket):
     await manager.connect(websocket)
     # per-connection state
-    sequence: List[np.ndarray] = []
-    predictions: List[int] = []
+    sequence = []
+    predictions = []
 
     # load model/artifacts lazily on first connection
     model, class_names, seq_len = load_artifacts()
@@ -289,30 +363,40 @@ async def websocket_predict(websocket: WebSocket):
 
                 # extract keypoints
                 kp = extract_keypoints_from_image(img, holistic)
-                sequence.append(kp)
-                sequence = sequence[-seq_len:]
+                now = time.monotonic()
+                sequence.append((now, kp))
+                sequence = [item for item in sequence if now - item[0] <= REALTIME_WINDOW_SECONDS]
 
-                if len(sequence) == seq_len:
+                window_duration = sequence[-1][0] - sequence[0][0] if len(sequence) > 1 else 0.0
+                if len(sequence) >= MIN_REALTIME_FRAMES and window_duration >= REALTIME_WINDOW_SECONDS * 0.8:
                     # run prediction in threadpool to avoid blocking
-                    seq_arr = np.expand_dims(np.array(sequence), axis=0)
+                    prepared, quality = prepare_detected_sequence([item[1] for item in sequence], seq_len)
+                    if prepared is None:
+                        await websocket.send_text(json.dumps({
+                            "status": "uncertain",
+                            "message": "Mantenha as mãos visíveis no enquadramento.",
+                            "quality": quality,
+                        }))
+                        continue
+
+                    seq_arr = np.expand_dims(prepared, axis=0)
                     loop = asyncio.get_running_loop()
                     res = await loop.run_in_executor(None, model.predict, seq_arr, 0)
-                    # model.predict returns array shape (1, num_classes)
-                    probs = res[0]
-                    best_idx = int(np.argmax(probs))
-                    conf = float(probs[best_idx])
-                    predictions.append(best_idx)
+                    response = prediction_response(res[0], class_names)
+                    response["quality"] = quality
+                    predicted_word = response.get("word")
+                    predictions.append(predicted_word)
+                    predictions = predictions[-10:]
 
-                    # simple stability: last 5 preds equal and above threshold
-                    stable = False
-                    if len(predictions) >= 5 and len(set(predictions[-5:])) == 1 and conf >= DEFAULT_THRESHOLD:
-                        stable = True
+                    # Require three equal accepted predictions before publishing a word.
+                    stable = (
+                        predicted_word is not None
+                        and len(predictions) >= 3
+                        and len(set(predictions[-3:])) == 1
+                    )
 
-                    response = {
-                        "status": "predicted" if stable else "partial",
-                        "word": class_names[best_idx] if class_names else str(best_idx),
-                        "confidence": conf,
-                    }
+                    if response["status"] == "predicted" and not stable:
+                        response["status"] = "partial"
                     await websocket.send_text(json.dumps(response))
 
         except WebSocketDisconnect:
