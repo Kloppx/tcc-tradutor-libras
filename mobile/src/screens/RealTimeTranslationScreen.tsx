@@ -13,7 +13,7 @@ export default function RealTimeTranslationScreen() {
 
   const cameraRef = useRef<CameraView>(null);
   const ws = useRef<WebSocket | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const serverLabel = WS_URL.replace(/^wss?:\/\//, '').replace(/\/ws\/predict$/, '');
 

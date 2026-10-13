@@ -1,3 +1,5 @@
+import { File as ExpoFile, UploadType } from 'expo-file-system';
+
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.10.73:8000').replace(/\/$/, '');
 
 type RequestOptions = RequestInit & {
@@ -135,3 +137,51 @@ export async function finalizeClinicalNote(patientId: string, payload: Record<st
     json: payload,
   });
 }
+
+export type PredictVideoResult = {
+  status: 'predicted' | 'error';
+  word?: string;
+  confidence?: number;
+  message?: string;
+  top3?: Array<{ word: string; confidence: number }>;
+};
+
+export async function predictVideo(videoUri: string): Promise<PredictVideoResult> {
+  const filename = videoUri.split('/').pop() || 'libras_sinal.mp4';
+
+  try {
+    // 1. Método nativo do Expo FileSystem (SDK 57 New Architecture) - sem bugs de FormData
+    const file = new ExpoFile(videoUri);
+    const uploadResult = await file.upload(`${API_BASE_URL}/predict_video`, {
+      uploadType: UploadType.MULTIPART,
+      fieldName: 'file',
+      mimeType: 'video/mp4',
+      httpMethod: 'POST',
+    });
+
+    if (uploadResult.status >= 200 && uploadResult.status < 300) {
+      return JSON.parse(uploadResult.body);
+    }
+    throw new Error(`Upload nativo falhou com status ${uploadResult.status}: ${uploadResult.body}`);
+  } catch (err: any) {
+    console.log('Tentando envio alternativo via Blob padrão:', err?.message || err);
+
+    // 2. Fallback padrão WinterCG com Blob (lê a URI local como Blob)
+    const fileRes = await fetch(videoUri);
+    const blob = await fileRes.blob();
+
+    const formData = new FormData();
+    formData.append('file', blob, filename);
+
+    const response = await fetch(`${API_BASE_URL}/predict_video`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    return data;
+  }
+}
+
+export { API_BASE_URL };
+

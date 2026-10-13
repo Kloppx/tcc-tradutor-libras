@@ -69,9 +69,9 @@ export default function RecursosNativosScreen() {
     try {
       const state = await Network.getNetworkStateAsync();
       setNetwork({
-        type: state.type,
-        isConnected: state.isConnected,
-        isInternetReachable: state.isInternetReachable,
+        type: state.type ?? 'UNKNOWN',
+        isConnected: state.isConnected ?? null,
+        isInternetReachable: state.isInternetReachable ?? null,
       });
       Toast.show({
         type: 'success',

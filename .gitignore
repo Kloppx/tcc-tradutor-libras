@@ -45,3 +45,12 @@ credentials/
 # Vídeos de acessibilidade usados diretamente pelo aplicativo mobile
 !mobile/assets/videos/
 !mobile/assets/videos/**
+
+# --- ARQUIVOS LOCAIS E TEMPORÁRIOS ---
+.tmp/
+scratch/
+*.log
+err.txt
+out.txt
+~$*.docx
+~$*.pptx

@@ -1,6 +1,11 @@
-true\pred,curar,doenca,dor,remedio,saude
-curar,5,4,0,1,0
-doenca,7,3,0,0,0
-dor,0,0,6,0,2
-remedio,2,1,0,9,0
-saude,0,0,1,0,7
+true\pred,curar,doenca,dor,hospital,posto de saude,ppa,remedio,saude,sus,ubs
+curar,9,2,0,0,0,0,0,0,0,0
+doenca,2,9,1,0,0,0,0,0,0,0
+dor,0,0,5,0,1,0,0,1,1,0
+hospital,0,0,0,4,0,1,0,0,3,0
+posto de saude,1,0,0,0,4,0,1,2,0,0
+ppa,0,0,0,0,0,8,0,0,0,2
+remedio,0,0,0,0,0,0,14,0,0,0
+saude,0,0,0,0,0,0,0,10,0,0
+sus,0,0,0,0,0,0,0,0,4,4
+ubs,0,0,0,0,0,0,0,0,4,5
