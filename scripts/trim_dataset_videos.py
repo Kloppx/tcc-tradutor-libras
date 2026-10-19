@@ -9,6 +9,17 @@ import numpy as np
 VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
 
 
+def print_progress(label: str, current: int, total: int, width: int = 32) -> None:
+    if total <= 0:
+        return
+    ratio = min(1.0, current / total)
+    filled = int(width * ratio)
+    bar = "#" * filled + "-" * (width - filled)
+    print(f"\r{label}: [{bar}] {current}/{total} ({ratio * 100:5.1f}%)", end="", flush=True)
+    if current >= total:
+        print()
+
+
 def list_videos(root: Path, recursive: bool) -> List[Path]:
     if recursive:
         return [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in VIDEO_EXTS]
@@ -222,8 +233,15 @@ def process_video(
     pad_s: float,
     fallback_window_s: float,
     fallback_max_windows: int,
+    overwrite: bool,
     dry_run: bool,
 ) -> int:
+    rel_parent = video_path.parent.relative_to(input_root)
+    output_folder = output_root / rel_parent
+    existing_outputs = list(output_folder.glob(f"{video_path.stem}_seg_*.mp4"))
+    if existing_outputs and not overwrite:
+        return 0
+
     signal, fps, total_frames = extract_motion_signal(video_path)
     if total_frames == 0:
         print(f"[SKIP] {video_path} (nao foi possivel ler)")
@@ -247,7 +265,6 @@ def process_video(
             max_windows=fallback_max_windows,
         )
 
-    rel_parent = video_path.parent.relative_to(input_root)
     stem = video_path.stem
 
     print(f"\nVideo: {video_path}")
@@ -283,6 +300,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--recursive", action="store_true", help="Percorre subpastas.")
     parser.add_argument("--dry-run", action="store_true", help="Somente previsualiza cortes.")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Refaz recortes que já existem. Por padrão, processa somente vídeos novos.",
+    )
     parser.add_argument(
         "--threshold-percentile",
         type=float,
@@ -343,7 +365,7 @@ def main() -> None:
     print(f"Total de videos encontrados: {len(videos)}")
 
     total_segments = 0
-    for video in sorted(videos):
+    for video_index, video in enumerate(sorted(videos), start=1):
         total_segments += process_video(
             video_path=video,
             input_root=args.input_root,
@@ -355,8 +377,10 @@ def main() -> None:
             pad_s=args.pad,
             fallback_window_s=args.fallback_window,
             fallback_max_windows=args.fallback_max_windows,
+            overwrite=args.overwrite,
             dry_run=args.dry_run,
         )
+        print_progress("Verificando e recortando", video_index, len(videos))
 
     if args.dry_run:
         print(f"\nDry-run: {total_segments} segmentos seriam gerados.")

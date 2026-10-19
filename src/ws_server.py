@@ -1,7 +1,7 @@
-"""WebSocket server for real-time prediction from mobile app.
+"""FastAPI server for recorded-video and WebSocket sign prediction.
 
-Receives base64 JPEG frames via WebSocket, extracts MediaPipe keypoints,
-maintains a short sequence per-connection and runs the Keras model.
+The mobile app uploads a short recording to ``/predict_video``. The legacy
+WebSocket endpoint remains available for experiments with frame sequences.
 
 Usage (local):
     .\venv\Scripts\Activate.ps1

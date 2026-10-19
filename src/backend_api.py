@@ -81,6 +81,45 @@ def _create_tables(connection: sqlite3.Connection) -> None:
 
 
 def _seed_defaults(connection: sqlite3.Connection) -> None:
+    users_total = connection.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
+
+    if users_total == 0:
+        created_at = _now()
+        demo_users = [
+            {
+                "name": "Medico Demonstracao",
+                "email": "medico@ubs.com",
+                "password": "123",
+                "role": "Medico",
+                "council_number": "DEMO-CRM",
+            },
+            {
+                "name": "Enfermeiro Demonstracao",
+                "email": "enfermeiro@ubs.com",
+                "password": "123",
+                "role": "Enfermeiro",
+                "council_number": "DEMO-COREN",
+            },
+        ]
+
+        for user in demo_users:
+            connection.execute(
+                """
+                INSERT INTO users (
+                    id, name, email, password_hash, role, council_number, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    user["name"],
+                    user["email"],
+                    _hash_password(user["password"]),
+                    user["role"],
+                    user["council_number"],
+                    created_at,
+                ),
+            )
+
     patients_total = connection.execute("SELECT COUNT(*) AS total FROM patients").fetchone()["total"]
 
     if patients_total == 0:

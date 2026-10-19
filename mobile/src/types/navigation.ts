@@ -41,7 +41,7 @@ export type RootStackParamList = {
   MedicoDashboard: undefined;
   ProntuarioMedico: { paciente: PacienteTriagem };
 
-  RealTimeTranslation: undefined;
+  VideoTranslation: undefined;
   Profissional: undefined;
   Home: undefined;
 };

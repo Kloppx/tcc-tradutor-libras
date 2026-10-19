@@ -32,6 +32,9 @@ videos/
 *.keras
 *.onnx
 
+# O modelo usado pela API faz parte do pacote executavel do projeto.
+!models/melhor_modelo_v2.keras
+
 # --- DADOS PROCESSADOS (MediaPipe) ---
 # Ignora numpy arrays salvos, mas permite CSV/JSON se você quiser
 # (Se quiser bloquear todos CSVs, mantenha o *.csv que você tinha)
@@ -53,3 +56,7 @@ err.txt
 out.txt
 ~$*.docx
 ~$*.pptx
+
+# Versoes intermediarias locais da apresentacao.
+APRESENTACAO_REGISTRO_INTERPRETARTE_v4.pptx
+output/

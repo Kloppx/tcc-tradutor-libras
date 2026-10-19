@@ -51,7 +51,7 @@ export default function ProfissionalScreen() {
       {/* BOTÃO PARA INICIAR TRADUÇÃO DE LIBRAS */}
       <TouchableOpacity 
         style={styles.btnLibras}
-        onPress={() => navigation.navigate('RealTimeTranslation')}
+        onPress={() => navigation.navigate('VideoTranslation')}
       >
         <Ionicons name="hand-right" size={24} color="#fff" />
         <Text style={styles.btnText}>Traduzir</Text>

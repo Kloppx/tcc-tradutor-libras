@@ -45,7 +45,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity 
             style={styles.miniCard}
-            onPress={() => navigation.navigate('RealTimeTranslation')}
+            onPress={() => navigation.navigate('VideoTranslation')}
           >
             <Ionicons name="camera-outline" size={24} color="#2196F3" />
             <Text style={styles.miniCardText}>Tradutor Libras</Text>

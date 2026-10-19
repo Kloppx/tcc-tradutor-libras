@@ -21,11 +21,11 @@ export const LibrasFAB = () => {
   return (
     <TouchableOpacity 
       style={styles.fab} 
-      onPress={() => navigation.navigate('RealTimeTranslation')}
+      onPress={() => navigation.navigate('VideoTranslation')}
       accessible={true}
       accessibilityRole="button"
-      accessibilityLabel="Ativar tradução em Libras"
-      accessibilityHint="Abre a tela de tradução em tempo real para comunicação com o paciente"
+      accessibilityLabel="Abrir tradutor de Libras por gravação"
+      accessibilityHint="Abre a câmera para gravar um sinal de três segundos e realizar a tradução"
     >
       <Ionicons name="hand-left-outline" size={30} color="#fff" importantForAccessibility="no" />
       <Text style={styles.fabText} allowFontScaling={false}>LIBRAS</Text>

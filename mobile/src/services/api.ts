@@ -1,6 +1,6 @@
 import { File as ExpoFile, UploadType } from 'expo-file-system';
 
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.10.73:8000').replace(/\/$/, '');
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
 type RequestOptions = RequestInit & {
   json?: Record<string, unknown>;

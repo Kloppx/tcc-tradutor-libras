@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.10.73:8000/ws/predict';
+const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://127.0.0.1:8000/ws/predict';
 
 export default function RealTimeTranslationScreen() {
   const [permission, requestPermission] = useCameraPermissions();

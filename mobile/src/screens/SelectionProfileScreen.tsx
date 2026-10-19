@@ -36,7 +36,7 @@ export default function SelectionProfileScreen({ navigation }: Props) {
           <View style={styles.cardWrapper}>
             <TouchableOpacity 
               style={[styles.card, styles.translatorCard]} 
-              onPress={() => navigation.navigate('RealTimeTranslation')}
+              onPress={() => navigation.navigate('VideoTranslation')}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Tradutor de Libras por Câmera"
@@ -98,18 +98,6 @@ export default function SelectionProfileScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {/* Atalho para o Modo Demonstração com Abas */}
-          <TouchableOpacity
-            style={styles.secondaryCard}
-            onPress={() => navigation.navigate('Main')}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Modo demonstração com abas"
-            accessibilityHint="Abre o fluxo principal com todas as abas"
-          >
-            <Ionicons name="apps-outline" size={22} color="#1C3A59" />
-            <Text style={styles.secondaryCardText}>Modo com Todas as Abas (Demonstração)</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -215,24 +203,5 @@ const styles = StyleSheet.create({
     color: '#666', 
     marginTop: 4,
     textAlign: 'center',
-  },
-  secondaryCard: {
-    backgroundColor: '#EAF2F8',
-    borderWidth: 1,
-    borderColor: '#B8CCE0',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  secondaryCardText: {
-    color: '#1C3A59',
-    fontWeight: '600',
-    fontSize: 14,
   },
 });

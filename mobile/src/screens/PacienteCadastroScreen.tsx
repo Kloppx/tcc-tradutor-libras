@@ -151,7 +151,15 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
             <TextInput style={styles.input} value={endereco} onChangeText={setEndereco} placeholder="Rua, número e bairro" placeholderTextColor="#888" />
             
             <Text style={styles.label}>RG</Text>
-            <TextInput style={styles.input} value={rg} onChangeText={setRg} placeholder="Digite seu RG" keyboardType="numeric" placeholderTextColor="#888" />
+            <TextInput
+              style={styles.input}
+              value={rg}
+              onChangeText={(value) => setRg(value.replace(/[^0-9A-Za-z.-]/g, '').toUpperCase())}
+              placeholder="Digite seu RG"
+              autoCapitalize="characters"
+              maxLength={14}
+              placeholderTextColor="#888"
+            />
 
             <Text style={styles.label}>CPF</Text>
             <MaskInput style={styles.input} value={cpf} onChangeText={setCpf} mask={[/\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '-', /\d/, /\d/]} placeholder="000.000.000-00" keyboardType="numeric" />

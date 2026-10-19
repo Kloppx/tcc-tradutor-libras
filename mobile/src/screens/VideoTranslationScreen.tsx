@@ -11,8 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { predictVideo, PredictVideoResult, API_BASE_URL } from '../services/api';
+import { RootStackParamList } from '../types/navigation';
 
 const VOCABULARY = [
   'curar',
@@ -28,7 +30,7 @@ const VOCABULARY = [
 ];
 
 export default function VideoTranslationScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -164,6 +166,15 @@ export default function VideoTranslationScreen() {
         <TouchableOpacity style={styles.primaryBtn} onPress={requestCameraPermission}>
           <Text style={styles.primaryBtnText}>Permitir Câmera</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.permissionBackBtn}
+          onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('SelectionProfile')}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar ao menu inicial"
+        >
+          <Ionicons name="arrow-back" size={18} color="#0284C7" />
+          <Text style={styles.permissionBackText}>Voltar ao menu</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -223,19 +234,6 @@ export default function VideoTranslationScreen() {
             <Ionicons name="refresh" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        {/* Guia de enquadramento pontilhado */}
-        {!prediction && !isAnalyzing && (
-          <View style={styles.guideContainer} pointerEvents="none">
-            <View style={[styles.guideBox, isRecording && styles.guideBoxRecording]}>
-              <Text style={styles.guideText}>
-                {isRecording
-                  ? `Gravando sinal... ${countdown}s`
-                  : 'Enquadre tronco e mãos no quadro'}
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Analisando */}
         {isAnalyzing && (
@@ -410,6 +408,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  permissionBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  permissionBackText: { color: '#0284C7', fontSize: 15, fontWeight: '600' },
   overlay: { flex: 1, justifyContent: 'space-between' },
   topBar: {
     flexDirection: 'row',
@@ -447,38 +454,6 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  guideContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  guideBox: {
-    width: '90%',
-    height: 280,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderStyle: 'dashed',
-    borderRadius: 24,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 16,
-  },
-  guideBoxRecording: {
-    borderColor: '#EF4444',
-    borderStyle: 'solid',
-    borderWidth: 3,
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-  },
-  guideText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    textAlign: 'center',
-  },
   bottomControls: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderTopLeftRadius: 24,

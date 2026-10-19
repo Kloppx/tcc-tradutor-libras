@@ -16,6 +16,18 @@ SPLITS = ['train', 'val', 'test']
 # --- CONFIGURAÇÃO DO MEDIAPIPE ---
 mp_holistic = mp.solutions.holistic
 
+
+def print_progress(label, current, total, width=32):
+    if total <= 0:
+        return
+    ratio = min(1.0, current / total)
+    filled = int(width * ratio)
+    bar = "#" * filled + "-" * (width - filled)
+    print(f"\r{label}: [{bar}] {current}/{total} ({ratio * 100:5.1f}%)", end="", flush=True)
+    if current >= total:
+        print()
+
+
 def extract_keypoints(results):
     """
     Transforma os resultados do MediaPipe em um array plano (1D) com todos os pontos.
@@ -33,12 +45,31 @@ def extract_keypoints(results):
     # Mantem apenas pose + maos para reduzir ruido e dimensionalidade.
     return np.concatenate([pose, lh, rh])
 
-def processar_videos(raw_path, export_path):
+def processar_videos(raw_path, export_path, overwrite=False):
     if not os.path.exists(raw_path):
         raise FileNotFoundError(f"Pasta de videos nao encontrada: {raw_path}")
 
     if not os.path.exists(export_path):
         os.makedirs(export_path)
+
+    video_jobs = []
+    for split in SPLITS:
+        split_input_path = os.path.join(raw_path, split)
+        if not os.path.exists(split_input_path):
+            continue
+        for action in sorted(os.listdir(split_input_path)):
+            folder_path = os.path.join(split_input_path, action)
+            if not os.path.isdir(folder_path):
+                continue
+            for video_file in sorted(os.listdir(folder_path)):
+                if video_file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.webm')):
+                    video_jobs.append((split, action, video_file))
+
+    total_videos = len(video_jobs)
+    completed_videos = 0
+    extracted_videos = 0
+    skipped_videos = 0
+    print(f"Total de vídeos no dataset recortado: {total_videos}")
 
     # Inicia o modelo Holistic
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -71,6 +102,15 @@ def processar_videos(raw_path, export_path):
 
                 for video_file in video_files:
                     video_path = os.path.join(folder_path, video_file)
+                    npy_filename = os.path.splitext(video_file)[0]
+                    npy_path = os.path.join(save_path, npy_filename + '.npy')
+
+                    if os.path.exists(npy_path) and not overwrite:
+                        skipped_videos += 1
+                        completed_videos += 1
+                        print_progress("Extraindo landmarks", completed_videos, total_videos)
+                        continue
+
                     cap = cv2.VideoCapture(video_path)
 
                     video_frames = []
@@ -92,17 +132,18 @@ def processar_videos(raw_path, export_path):
 
                     cap.release()
 
-                    npy_filename = os.path.splitext(video_file)[0]
-                    npy_path = os.path.join(save_path, npy_filename)
-
                     np.save(npy_path, np.array(video_frames))
+                    extracted_videos += 1
+                    completed_videos += 1
+                    print_progress("Extraindo landmarks", completed_videos, total_videos)
 
-                    print(f"Video {video_file} processado: {frame_num} frames salvos.")
+    print(f"Novas features: {extracted_videos} | Já existentes: {skipped_videos}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extrai keypoints dos videos de Libras.")
     parser.add_argument("--raw-root", default=RAW_PATH, help="Pasta raiz dos videos (default: dataset/raw).")
     parser.add_argument("--export-root", default=EXPORT_PATH, help="Pasta de saida das features (default: data/features).")
+    parser.add_argument("--overwrite", action="store_true", help="Recalcula features que já existem.")
     args = parser.parse_args()
 
-    processar_videos(args.raw_root, args.export_root)
+    processar_videos(args.raw_root, args.export_root, overwrite=args.overwrite)
