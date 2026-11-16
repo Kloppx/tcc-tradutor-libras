@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { createPatient } from '../services/api';
 
 export default function AnamneseScreen({ navigation }: any) {
   const [nome, setNome] = useState('');
@@ -37,7 +38,7 @@ export default function AnamneseScreen({ navigation }: any) {
     return `${digits.slice(0, 1)},${digits.slice(1)}`;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const cpfLimpo = cpf.replace(/\D/g, '');
 
     if (nome.trim().length < 3) {
@@ -55,15 +56,29 @@ export default function AnamneseScreen({ navigation }: any) {
       return;
     }
 
-    Toast.show({
-      type: 'success',
-      text1: 'Anamnese registrada',
-      text2: 'Você foi encaminhado para a fila de espera.',
-    });
-
-    navigation.navigate('PacienteEspera', {
-      pacienteNome: nome.split(' ')[0] || 'Paciente',
-    });
+    try {
+      const response = await createPatient({
+        nome: nome.trim(),
+        cpf: cpfLimpo,
+        triagem: { peso, altura, queixa: motivo.trim() },
+      });
+      Toast.show({
+        type: 'success',
+        text1: 'Anamnese registrada',
+        text2: 'Você foi encaminhado para a fila de espera.',
+      });
+      navigation.navigate('PacienteEspera', {
+        pacienteNome: nome.split(' ')[0] || 'Paciente',
+        pacienteId: response.patient.id,
+        senha: response.patient.senha,
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Falha ao registrar anamnese',
+        text2: error instanceof Error ? error.message : 'Tente novamente.',
+      });
+    }
   };
 
   return (

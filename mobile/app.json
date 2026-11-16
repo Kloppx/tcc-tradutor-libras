@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "InterpreteArte",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,7 +33,8 @@
     "plugins": [
       "expo-font",
       "expo-video",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-secure-store"
     ]
   }
 }

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
-import { listPatients, deletePatient } from '../services/api';
+import { listPatients, deletePatient, logoutProfessional } from '../services/api';
 
 const DADOS_FILA: PacienteTriagem[] = [];
 
@@ -77,7 +77,8 @@ export default function EnfermagemDashboardScreen({ navigation }: Props) {
       "Tem certeza que deseja sair do painel de enfermagem?", 
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Sair", onPress: () => {
+        { text: "Sair", onPress: async () => {
+            await logoutProfessional();
             Toast.show({ type: 'info', text1: 'Sessão encerrada com segurança.' });
             navigation.replace('Login'); 
         }, style: "destructive" }

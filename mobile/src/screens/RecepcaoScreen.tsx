@@ -6,7 +6,7 @@ import MaskInput from 'react-native-mask-input';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
 import LibrasVideoButton from '../components/LibrasVideoButton';
-import { listPatients } from '../services/api';
+import { lookupPatient } from '../services/api';
 
 type Props = RootStackScreenProps<'Recepcao'>;
 
@@ -33,21 +33,8 @@ export default function RecepcaoScreen({ navigation }: Props) {
     }
 
     try {
-      const response = await listPatients();
-      const pacienteEncontrado = response.patients.find((patient) => {
-        const cpfBackend = (patient.cpf || '').replace(/\D/g, '');
-        const susBackend = (patient.sus || '').replace(/\D/g, '');
-        return cpfBackend === cpfDigits || susBackend === susDigits;
-      });
-
-      if (!pacienteEncontrado) {
-        Toast.show({
-          type: 'error',
-          text1: 'Paciente não encontrado',
-          text2: 'Confira o CPF ou Cartão SUS e tente novamente.',
-        });
-        return;
-      }
+      const response = await lookupPatient(cpfDigits || undefined, susDigits || undefined);
+      const pacienteEncontrado = response.patient;
 
       setShowLookupModal(false);
       setCpf('');
@@ -58,7 +45,7 @@ export default function RecepcaoScreen({ navigation }: Props) {
         text2: 'Senha gerada. Siga para o painel de espera.',
       });
       navigation.navigate('PacienteEspera', {
-        pacienteNome: pacienteEncontrado.nome.split(' ')[0],
+        pacienteNome: pacienteEncontrado.nome,
         pacienteId: pacienteEncontrado.id,
         senha: pacienteEncontrado.senha,
       });

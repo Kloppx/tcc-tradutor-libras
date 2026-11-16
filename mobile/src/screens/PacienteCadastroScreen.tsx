@@ -89,7 +89,6 @@ export default function PacienteCadastroScreen({ navigation }: Props) {
         cpf: unmaskedCpf,
         sus: unmaskedSus,
         dataNascimento,
-        status: 'waiting',
       });
 
       Toast.show({ type: 'success', text1: 'Cadastro realizado!', text2: 'Sua senha foi gerada.' });

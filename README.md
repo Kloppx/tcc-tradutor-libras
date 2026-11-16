@@ -72,20 +72,29 @@ Se preferir configurar o aplicativo manualmente, copie `mobile/.env.example` par
 
 Exemplos:
 
-- emulador Android: `http://10.0.2.2:8000` e `ws://10.0.2.2:8000/ws/predict`;
-- celular físico: `http://192.168.X.X:8000` e `ws://192.168.X.X:8000/ws/predict`.
+- emulador Android: `EXPO_PUBLIC_API_URL=http://10.0.2.2:8000`;
+- celular físico: `EXPO_PUBLIC_API_URL=http://192.168.X.X:8000`.
 
 O backend expõe, entre outros, os endpoints:
 
 - `POST /api/auth/login`;
 - `POST /api/auth/register`;
 - `GET /api/professionals`;
+- `PUT /api/professionals/{id}/activation`;
 - `DELETE /api/professionals/{id}`;
 - `GET /api/patients`;
 - `POST /api/patients`;
+- `POST /api/patients/lookup`;
+- `GET /api/patients/{id}/status`;
 - `PUT /api/patients/{id}/triage`;
 - `PUT /api/patients/{id}/clinical-note`;
 - `POST /predict_video`.
+
+As rotas profissionais exigem um token Bearer emitido no login. Cadastros públicos ficam inativos até que um médico os aprove na tela de gestão; cadastros feitos por um médico autenticado já são ativados. O autoatendimento, a consulta mínima por CPF/SUS e o acompanhamento da senha continuam públicos, sem expor o prontuário completo.
+
+## Segurança e privacidade
+
+Em produção, defina `INTERPRETARTE_SECRET_KEY` com um segredo aleatório e disponibilize a API exclusivamente por HTTPS. Sem essa variável, o backend gera uma chave local em `data/.api_secret`, adequada apenas ao desenvolvimento. As decisões técnicas e os pontos que ainda exigem validação institucional estão documentados em `docs/SEGURANCA_E_LGPD.md`.
 
 ## Adição incremental de vídeos para a IA
 
@@ -116,7 +125,7 @@ O processo mantém os arquivos existentes, ignora duplicatas, processa apenas os
 
 ## Apresentação
 
-A versão mais recente está em `APRESENTACAO_REGISTRO_INTERPRETARTE_v6.pptx` e contém o vídeo de demonstração incorporado.
+A versão mais recente está em `APRESENTACAO_REGISTRO_INTERPRETARTE_v10.pptx` e contém o vídeo de demonstração incorporado, o diagrama de sequência da IA, a estrutura da rede neural, a assertividade por palavra no conjunto de teste e os resultados finais.
 
 ## EAS Update
 

@@ -1,4 +1,4 @@
-"""FastAPI server for recorded-video and WebSocket sign prediction.
+"""FastAPI server for recorded-video sign prediction and the clinical API.
 
 The mobile app uploads a short recording to ``/predict_video``. The legacy
 WebSocket endpoint remains available for experiments with frame sequences.
@@ -8,20 +8,18 @@ Usage (local):
     pip install fastapi uvicorn python-multipart opencv-python mediapipe
     uvicorn src.ws_server:app --host 0.0.0.0 --port 8000
 
-The mobile app should point to ws://<HOST>:8000/ws/predict
+The mobile app should point ``EXPO_PUBLIC_API_URL`` to this server.
 """
-import asyncio
-import base64
 import json
 import os
-import time
 from typing import Dict, List
 
 import cv2
 import numpy as np
 import mediapipe as mp
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
+from starlette.concurrency import run_in_threadpool
 import tempfile
 import uuid
 from tensorflow.keras.models import load_model
@@ -45,8 +43,10 @@ DEFAULT_THRESHOLD = 0.75
 DEFAULT_MARGIN = 0.15
 TEMPERATURE = 1.0
 MIN_HAND_DETECTION_RATIO = 0.35
-REALTIME_WINDOW_SECONDS = 3.0
-MIN_REALTIME_FRAMES = 12
+MAX_UPLOAD_BYTES = 40 * 1024 * 1024
+MAX_VIDEO_FRAMES = 1800
+UPLOAD_CHUNK_BYTES = 1024 * 1024
+ALLOWED_VIDEO_SUFFIXES = {'.mp4', '.mov', '.webm', '.avi', '.mkv'}
 
 
 app = FastAPI()
@@ -100,16 +100,6 @@ def load_artifacts():
         seq_len = 45
 
     return model, class_names, seq_len
-
-
-def decode_image(base64_str: str):
-    try:
-        img_bytes = base64.b64decode(base64_str)
-        arr = np.frombuffer(img_bytes, dtype=np.uint8)
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        return img
-    except Exception:
-        return None
 
 
 def extract_keypoints_from_image(image, holistic):
@@ -181,22 +171,6 @@ def uniform_sample(items, target_length):
     return [items[int(index)] for index in indices]
 
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-
-manager = ConnectionManager()
-
-
 # simple artifact cache to avoid reloading model every request
 _MODEL_CACHE = {
     'model': None,
@@ -215,108 +189,47 @@ def ensure_artifacts():
 
 @app.get("/")
 async def index():
-    return HTMLResponse("WebSocket prediction server is running.")
+    return HTMLResponse("InterpreteArte API is running.")
 
 
-@app.post('/predict_video')
-async def predict_video(file: UploadFile = File(...)):
-    """Accept a short video (mp4/webm) and return the predicted word.
-
-    The server will sample `seq_len` frames evenly across the video,
-    extract MediaPipe keypoints and run the model.
-    """
-    # load artifacts
-    model, class_names, seq_len = ensure_artifacts()
-
-    # save upload to a temporary file
-    suffix = os.path.splitext(file.filename)[1] if file.filename else '.mp4'
-    tmp_name = os.path.join(tempfile.gettempdir(), f"upload_{uuid.uuid4().hex}{suffix}")
+def _sample_video_file(video_path: str, seq_len: int) -> List[np.ndarray]:
+    cap = cv2.VideoCapture(video_path)
     try:
-        contents = await file.read()
-        with open(tmp_name, 'wb') as f:
-            f.write(contents)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        if total_frames > MAX_VIDEO_FRAMES:
+            raise ValueError("video_too_long")
 
-        cap = cv2.VideoCapture(tmp_name)
-        frames = []
-        while True:
+        frames: List[np.ndarray] = []
+        if total_frames > 0:
+            indexes = np.linspace(0, total_frames - 1, min(seq_len, total_frames)).astype(int)
+            for frame_index in indexes:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(frame_index))
+                ret, frame = cap.read()
+                if ret:
+                    frames.append(frame)
+            return frames
+
+        while len(frames) <= MAX_VIDEO_FRAMES:
             ret, frame = cap.read()
             if not ret:
                 break
             frames.append(frame)
+        if len(frames) > MAX_VIDEO_FRAMES:
+            raise ValueError("video_too_long")
+        return uniform_sample(frames, seq_len) if frames else []
+    finally:
         cap.release()
 
-        if len(frames) == 0:
-            return {"status": "error", "message": "no_frames"}
 
-        selected_frames = uniform_sample(frames, seq_len)
-        kp_sequence = []
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            for img in selected_frames:
-                kp = extract_keypoints_from_image(img, holistic)
-                kp_sequence.append(kp)
-
-        prepared, quality = prepare_detected_sequence(kp_sequence, seq_len)
-        if prepared is None:
-            return {
-                "status": "uncertain",
-                "message": "As mãos não ficaram visíveis durante tempo suficiente.",
-                "quality": quality,
-            }
-
-        seq_arr = np.expand_dims(prepared, axis=0)
-        # run prediction
-        try:
-            res = model.predict(seq_arr, 0)
-            response = prediction_response(res[0], class_names)
-            response["quality"] = quality
-            top3_info = ", ".join(
-                f"{item['word']}: {item['confidence'] * 100:.1f}%"
-                for item in response.get("top3", [])
-            )
-            print(
-                f"[IA] status={response['status']} palavra={response.get('word')} "
-                f"confiança={response.get('confidence', 0) * 100:.1f}% | {top3_info}",
-                flush=True,
-            )
-            return response
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    finally:
-        try:
-            if os.path.exists(tmp_name):
-                os.remove(tmp_name)
-        except Exception:
-            pass
-
-
-@app.post('/predict_frames')
-async def predict_frames(payload: Dict):
-    """Accept JSON payload with key 'frames' -> list of base64 JPEG strings."""
-    if 'frames' not in payload:
-        return {"status": "error", "message": "missing_frames"}
-
-    frames_b64 = payload['frames']
-    if not isinstance(frames_b64, list) or len(frames_b64) == 0:
+def _predict_video_file(video_path: str, model, class_names, seq_len: int) -> Dict:
+    selected_frames = _sample_video_file(video_path, seq_len)
+    if not selected_frames:
         return {"status": "error", "message": "no_frames"}
 
-    model, class_names, seq_len = ensure_artifacts()
-
-    imgs = []
-    for b64 in frames_b64:
-        img = decode_image(b64)
-        if img is not None:
-            imgs.append(img)
-
-    if len(imgs) == 0:
-        return {"status": "error", "message": "invalid_frames"}
-
-    selected_images = uniform_sample(imgs, seq_len)
     kp_sequence = []
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        for img in selected_images:
-            kp = extract_keypoints_from_image(img, holistic)
-            kp_sequence.append(kp)
+        for image in selected_frames:
+            kp_sequence.append(extract_keypoints_from_image(image, holistic))
 
     prepared, quality = prepare_detected_sequence(kp_sequence, seq_len)
     if prepared is None:
@@ -326,84 +239,59 @@ async def predict_frames(payload: Dict):
             "quality": quality,
         }
 
-    seq_arr = np.expand_dims(prepared, axis=0)
+    result = model.predict(np.expand_dims(prepared, axis=0), 0)
+    response = prediction_response(result[0], class_names)
+    response["quality"] = quality
+    top3_info = ", ".join(
+        f"{item['word']}: {item['confidence'] * 100:.1f}%"
+        for item in response.get("top3", [])
+    )
+    print(
+        f"[IA] status={response['status']} palavra={response.get('word')} "
+        f"confiança={response.get('confidence', 0) * 100:.1f}% | {top3_info}",
+        flush=True,
+    )
+    return response
+
+
+@app.post('/predict_video')
+async def predict_video(file: UploadFile = File(...)):
+    """Accept a short video (mp4/webm) and return the predicted word.
+
+    The server will sample `seq_len` frames evenly across the video,
+    extract MediaPipe keypoints and run the model.
+    """
+    suffix = os.path.splitext(file.filename)[1].lower() if file.filename else '.mp4'
+    if suffix not in ALLOWED_VIDEO_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Formato de vídeo não suportado")
+    if file.content_type and not file.content_type.startswith('video/'):
+        raise HTTPException(status_code=415, detail="O arquivo enviado não é um vídeo")
+
+    tmp_name = os.path.join(tempfile.gettempdir(), f"upload_{uuid.uuid4().hex}{suffix}")
     try:
-        res = model.predict(seq_arr, 0)
-        response = prediction_response(res[0], class_names)
-        response["quality"] = quality
-        return response
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+        received_bytes = 0
+        with open(tmp_name, 'wb') as f:
+            while chunk := await file.read(UPLOAD_CHUNK_BYTES):
+                received_bytes += len(chunk)
+                if received_bytes > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="Vídeo excede o limite de 40 MB")
+                f.write(chunk)
 
-
-@app.websocket("/ws/predict")
-async def websocket_predict(websocket: WebSocket):
-    await manager.connect(websocket)
-    # per-connection state
-    sequence = []
-    predictions = []
-
-    # load model/artifacts lazily on first connection
-    model, class_names, seq_len = load_artifacts()
-
-    # MediaPipe context per connection
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        model, class_names, seq_len = await run_in_threadpool(ensure_artifacts)
         try:
-            while True:
-                data = await websocket.receive_text()
+            return await run_in_threadpool(_predict_video_file, tmp_name, model, class_names, seq_len)
+        except ValueError as exc:
+            if str(exc) == "video_too_long":
+                raise HTTPException(status_code=413, detail="Vídeo longo demais para análise") from exc
+            raise
+        except Exception as exc:
+            print(f"[IA] falha ao processar vídeo: {type(exc).__name__}", flush=True)
+            raise HTTPException(status_code=422, detail="Não foi possível analisar o vídeo") from exc
 
-                # Expect base64 JPEG string
-                if not data:
-                    continue
-
-                img = decode_image(data)
-                if img is None:
-                    await websocket.send_text(json.dumps({"status": "error", "message": "invalid_image"}))
-                    continue
-
-                # extract keypoints
-                kp = extract_keypoints_from_image(img, holistic)
-                now = time.monotonic()
-                sequence.append((now, kp))
-                sequence = [item for item in sequence if now - item[0] <= REALTIME_WINDOW_SECONDS]
-
-                window_duration = sequence[-1][0] - sequence[0][0] if len(sequence) > 1 else 0.0
-                if len(sequence) >= MIN_REALTIME_FRAMES and window_duration >= REALTIME_WINDOW_SECONDS * 0.8:
-                    # run prediction in threadpool to avoid blocking
-                    prepared, quality = prepare_detected_sequence([item[1] for item in sequence], seq_len)
-                    if prepared is None:
-                        await websocket.send_text(json.dumps({
-                            "status": "uncertain",
-                            "message": "Mantenha as mãos visíveis no enquadramento.",
-                            "quality": quality,
-                        }))
-                        continue
-
-                    seq_arr = np.expand_dims(prepared, axis=0)
-                    loop = asyncio.get_running_loop()
-                    res = await loop.run_in_executor(None, model.predict, seq_arr, 0)
-                    response = prediction_response(res[0], class_names)
-                    response["quality"] = quality
-                    predicted_word = response.get("word")
-                    predictions.append(predicted_word)
-                    predictions = predictions[-10:]
-
-                    # Require three equal accepted predictions before publishing a word.
-                    stable = (
-                        predicted_word is not None
-                        and len(predictions) >= 3
-                        and len(set(predictions[-3:])) == 1
-                    )
-
-                    if response["status"] == "predicted" and not stable:
-                        response["status"] = "partial"
-                    await websocket.send_text(json.dumps(response))
-
-        except WebSocketDisconnect:
-            manager.disconnect(websocket)
-        except Exception as e:
-            try:
-                await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
-            except Exception:
-                pass
-            manager.disconnect(websocket)
+    finally:
+        await file.close()
+        try:
+            if os.path.exists(tmp_name):
+                os.remove(tmp_name)
+        except Exception:
+            pass

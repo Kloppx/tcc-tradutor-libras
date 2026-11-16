@@ -47,7 +47,6 @@ finally {
 Write-Host "[3/4] Criando a configuracao de rede do aplicativo..." -ForegroundColor Cyan
 $EnvContent = @(
     "EXPO_PUBLIC_API_URL=http://${ServerIp}:8000"
-    "EXPO_PUBLIC_WS_URL=ws://${ServerIp}:8000/ws/predict"
 ) -join [Environment]::NewLine
 Set-Content -LiteralPath $EnvFile -Value $EnvContent -Encoding ascii
 
