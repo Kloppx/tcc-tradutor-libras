@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { listPatients, BackendPatient } from '../services/api';
+import { listPatients, BackendPatient, logoutProfessional } from '../services/api';
 import Toast from 'react-native-toast-message';
 
 const RISK_COLOR: Record<string, string> = {
@@ -34,7 +34,8 @@ export default function ProfissionalScreen() {
     load();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutProfessional();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 

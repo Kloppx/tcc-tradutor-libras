@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { RootStackScreenProps } from '../types/navigation';
-import { deleteProfessional, listProfessionals, BackendUser } from '../services/api';
+import { deleteProfessional, listProfessionals, setProfessionalActivation, BackendUser } from '../services/api';
 
 type Props = RootStackScreenProps<'GestaoProfissionais'>;
 
@@ -63,6 +63,23 @@ export default function GestaoProfissionaisScreen({ navigation }: Props) {
     ]);
   };
 
+  const handleActivation = async (professional: BackendUser) => {
+    try {
+      await setProfessionalActivation(professional.id, !professional.active);
+      Toast.show({
+        type: 'success',
+        text1: professional.active ? 'Acesso desativado' : 'Cadastro aprovado',
+      });
+      await loadProfessionals();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Não foi possível alterar o acesso',
+        text2: error instanceof Error ? error.message : 'Tente novamente.',
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F6FA" />
@@ -103,7 +120,17 @@ export default function GestaoProfissionaisScreen({ navigation }: Props) {
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>{item.role} • {item.email}</Text>
               <Text style={styles.metaSecondary}>{item.councilNumber ? `Conselho: ${item.councilNumber}` : 'Conselho não informado'}</Text>
+              <Text style={[styles.accessStatus, item.active ? styles.activeStatus : styles.pendingStatus]}>
+                {item.active ? 'Acesso ativo' : 'Aguardando aprovação'}
+              </Text>
             </View>
+            <TouchableOpacity
+              onPress={() => handleActivation(item)}
+              style={styles.activationButton}
+              accessibilityLabel={item.active ? `Desativar ${item.name}` : `Aprovar ${item.name}`}
+            >
+              <Ionicons name={item.active ? 'pause-circle-outline' : 'checkmark-circle-outline'} size={22} color="#1E88E5" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteButton} accessibilityLabel={`Excluir ${item.name}`}>
               <Ionicons name="trash-outline" size={20} color="#E53935" />
             </TouchableOpacity>
@@ -161,6 +188,18 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: '#1C3A59' },
   meta: { marginTop: 4, color: '#4D6A85', fontSize: 13 },
   metaSecondary: { marginTop: 2, color: '#6E879E', fontSize: 12 },
+  accessStatus: { marginTop: 6, fontSize: 12, fontWeight: '700' },
+  activeStatus: { color: '#2E7D32' },
+  pendingStatus: { color: '#B26A00' },
+  activationButton: {
+    marginLeft: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F4FD',
+  },
   deleteButton: {
     marginLeft: 10,
     width: 36,

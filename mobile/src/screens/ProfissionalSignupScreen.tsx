@@ -49,10 +49,18 @@ export default function ProfissionalSignupScreen() {
       });
       return;
     }
+    if (senha.length < 8) {
+      Toast.show({
+        type: 'error',
+        text1: 'Senha muito curta',
+        text2: 'Use pelo menos 8 caracteres.',
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      await registerProfessional({
+      const response = await registerProfessional({
         name: nome,
         email,
         password: senha,
@@ -62,11 +70,17 @@ export default function ProfissionalSignupScreen() {
 
       Toast.show({
         type: 'success',
-        text1: 'Solicitação Enviada!',
-        text2: `Aguarde a validação do seu ${cargo === 'Medico' ? 'CRM' : 'COREN'}.`
+        text1: response.user.active ? 'Profissional cadastrado!' : 'Solicitação enviada!',
+        text2: response.user.active
+          ? 'O novo acesso já está ativo.'
+          : `Aguarde a validação do seu ${cargo === 'Medico' ? 'CRM' : 'COREN'}.`
       });
 
-      navigation.navigate('Login');
+      if (response.user.active) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Login');
+      }
     } catch (error) {
       Toast.show({
         type: 'error',

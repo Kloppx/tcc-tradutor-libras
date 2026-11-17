@@ -5,7 +5,7 @@ import { HealthHeader, LibrasFAB } from '../components/GlobalComponents';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { PacienteTriagem, RootStackScreenProps } from '../types/navigation';
-import { listPatients } from '../services/api';
+import { listPatients, logoutProfessional } from '../services/api';
 
 type Props = RootStackScreenProps<'MedicoDashboard'>;
 
@@ -50,7 +50,8 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
-        onPress: () => {
+        onPress: async () => {
+          await logoutProfessional();
           Toast.show({ type: 'info', text1: 'Sessão encerrada', text2: 'Até logo, doutor!' });
           navigation.replace('Login');
         },
@@ -105,6 +106,13 @@ export default function MedicoDashboardScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <HealthHeader title="Consultório Médico" />
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => navigation.navigate('GestaoProfissionais')}
+          accessibilityLabel="Gerenciar profissionais"
+        >
+          <Ionicons name="people-outline" size={24} color="#2196F3" />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={26} color="#ff5252" />
         </TouchableOpacity>

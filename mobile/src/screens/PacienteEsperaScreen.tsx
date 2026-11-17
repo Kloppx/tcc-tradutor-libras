@@ -1,19 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackScreenProps } from '../types/navigation';
 import { LibrasFAB } from '../components/GlobalComponents';
-import { getPatient } from '../services/api';
+import { getPatientStatus } from '../services/api';
 
 type Props = RootStackScreenProps<'PacienteEspera'>;
 
 export default function PacienteEsperaScreen({ route, navigation }: Props) {
   const { pacienteNome, pacienteId, senha: senhaRecebida } = route.params;
-  const [senha] = useState(senhaRecebida || `N-${Math.floor(Math.random() * 90) + 10}`);
+  const [senha, setSenha] = useState(senhaRecebida || '--');
   const [isCalled, setIsCalled] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statusError, setStatusError] = useState(false);
   
   const [opacity] = useState(new Animated.Value(1));
+  const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   const loadStatus = async () => {
     if (!pacienteId) {
@@ -22,10 +24,12 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
 
     try {
       setIsRefreshing(true);
-      const response = await getPatient(pacienteId);
+      const response = await getPatientStatus(pacienteId);
       setIsCalled(response.patient.status === 'called');
+      if (response.patient.senha) setSenha(response.patient.senha);
+      setStatusError(false);
     } catch {
-      setIsCalled(false);
+      setStatusError(true);
     } finally {
       setIsRefreshing(false);
     }
@@ -42,7 +46,7 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (isCalled) {
-      Animated.loop(
+      pulseAnimationRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(opacity, {
             toValue: 0.4,
@@ -55,8 +59,15 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      pulseAnimationRef.current.start();
     }
+
+    return () => {
+      pulseAnimationRef.current?.stop();
+      pulseAnimationRef.current = null;
+      opacity.setValue(1);
+    };
   }, [isCalled, opacity]);
 
   return (
@@ -69,6 +80,9 @@ export default function PacienteEsperaScreen({ route, navigation }: Props) {
       </View>
 
       <View style={styles.content}>
+        {statusError && (
+          <Text style={styles.statusError}>Sem conexão. Mantendo o último status recebido.</Text>
+        )}
         <View style={styles.ticketCard}>
           <Text style={styles.ticketLabel}>Sua Senha</Text>
           <Text style={styles.ticketNumber}>{senha}</Text>
@@ -160,6 +174,15 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     shadowOffset: { height: 5, width: 0 },
     marginBottom: 40,
+  },
+  statusError: {
+    color: '#FFF3CD',
+    backgroundColor: 'rgba(120, 75, 0, 0.45)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   ticketLabel: { 
     fontSize: 18, 

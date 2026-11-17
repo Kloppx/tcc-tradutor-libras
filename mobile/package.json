@@ -23,6 +23,7 @@
     "expo-font": "~57.0.4",
     "expo-location": "~57.0.20",
     "expo-network": "~57.0.2",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-updates": "~57.0.24",
     "expo-video": "~57.0.5",
