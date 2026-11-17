@@ -123,6 +123,10 @@ Para adicionar os vídeos e executar o pipeline completo:
 
 O processo mantém os arquivos existentes, ignora duplicatas, processa apenas os vídeos novos e mostra barras de progresso no terminal. O treinamento continua usando todas as classes já cadastradas.
 
+## Documentação e manual
+
+A documentação acadêmica completa, com requisitos, segurança, matrizes, instalação e manual ilustrado dos fluxos, está disponível em [`docs/DOCUMENTACAO_E_MANUAL_INTERPRETARTE.pdf`](docs/DOCUMENTACAO_E_MANUAL_INTERPRETARTE.pdf).
+
 ## Apresentação
 
 A versão mais recente está em `APRESENTACAO_REGISTRO_INTERPRETARTE_v10.pptx` e contém o vídeo de demonstração incorporado, o diagrama de sequência da IA, a estrutura da rede neural, a assertividade por palavra no conjunto de teste e os resultados finais.
